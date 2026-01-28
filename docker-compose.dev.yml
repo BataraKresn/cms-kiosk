@@ -1,0 +1,261 @@
+# Development Environment - All Microservices
+# Cosmic Media Streaming Platform
+
+services:
+  # ==========================================
+  # DATABASE & INFRASTRUCTURE SERVICES
+  # ==========================================
+  
+  # MariaDB Database (Shared by all services)
+  mariadb:
+    image: mariadb:10.11
+    container_name: platform-db-dev
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password_dev}
+      MARIADB_DATABASE: ${DB_DATABASE:-platform}
+      MARIADB_USER: ${DB_USERNAME:-platform_user}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-platform_password_dev}
+      MARIADB_ROOT_HOST: localhost  # Only allow root from localhost
+    volumes:
+      - ./data-kiosk/dev/mariadb:/var/lib/mysql
+      - ./platform.sql:/docker-entrypoint-initdb.d/01-platform.sql:ro
+      - ./restore.sql:/docker-entrypoint-initdb.d/02-restore.sql:ro
+      - ./cosmic-media-streaming-dpr/mariadb/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+      - ./data-kiosk/logs/dev/mariadb:/var/log/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - kiosk-net
+    # Config now loaded from my.cnf - no command line overrides needed
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: platform-redis-dev
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data-kiosk/dev/redis:/data
+    networks:
+      - kiosk-net
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: platform-minio-dev
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET:-minioadmin123}
+    volumes:
+      - ./data-kiosk/dev/minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - kiosk-net
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ==========================================
+  # SERVICE #1: COSMIC MEDIA STREAMING (Laravel)
+  # Main Application - Media Management & CMS
+  # ==========================================
+  
+  cosmic-app:
+    image: kiosk-cosmic-app:dev
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile.dev
+    container_name: cosmic-media-app-dev
+    restart: always
+    working_dir: /var/www
+    env_file:
+      - .env.dev
+    volumes:
+      - ./cosmic-media-streaming-dpr:/var/www
+      - /var/www/vendor  # Anonymous volume to preserve composer dependencies
+      - /var/www/node_modules  # Anonymous volume to preserve npm dependencies
+      - ./cosmic-media-streaming-dpr/storage:/var/www/storage
+      - ./cosmic-media-streaming-dpr/bootstrap/cache:/var/www/bootstrap/cache
+    ports:
+      - "8000:8000"  # Laravel application
+      - "5173:5173"  # Vite dev server
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+
+  # Queue Worker for Laravel
+  cosmic-queue:
+    image: kiosk-cosmic-queue:dev
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile.dev
+    container_name: cosmic-queue-dev
+    restart: always
+    working_dir: /var/www
+    env_file:
+      - .env.dev
+    volumes:
+      - ./cosmic-media-streaming-dpr:/var/www
+      - /var/www/vendor  # Anonymous volume to preserve composer dependencies
+    command: php artisan queue:work --verbose --tries=3 --timeout=300
+    depends_on:
+      - cosmic-app
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+
+  # Scheduler for Laravel
+  cosmic-scheduler:
+    image: kiosk-cosmic-scheduler:dev
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile.dev
+    container_name: cosmic-scheduler-dev
+    restart: always
+    working_dir: /var/www
+    env_file:
+      - .env.dev
+    volumes:
+      - ./cosmic-media-streaming-dpr:/var/www
+      - /var/www/vendor  # Anonymous volume to preserve composer dependencies
+    command: bash -c "while true; do php artisan schedule:run; sleep 60; done"
+    depends_on:
+      - cosmic-app
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+
+  # ==========================================
+  # SERVICE #2: GENERATE PDF (Node.js)
+  # PDF Generation & WebSocket Service
+  # ==========================================
+  
+  generate-pdf:
+    image: kiosk-generate-pdf:dev
+    pull_policy: build
+    build:
+      context: ./generate-pdf
+      dockerfile: Dockerfile
+    container_name: generate-pdf-dev
+    restart: always
+    env_file:
+      - .env.dev
+    environment:
+      - DB_USER=${DB_USERNAME}
+      - DB_NAME=${DB_DATABASE}
+    ports:
+      - "3333:3333"  # HTTP Server
+      - "3335:3335"  # WebSocket Server
+    volumes:
+      - ./generate-pdf:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./generate-pdf/uploads:/usr/src/app/uploads
+      - ./generate-pdf/hls_output:/usr/src/app/hls_output
+      - ./generate-pdf/public:/usr/src/app/public
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # SERVICE #3: REMOTE ANDROID DEVICE (Python)
+  # Device Management & Control Service
+  # ==========================================
+  
+  remote-android:
+    image: kiosk-remote-android:dev
+    pull_policy: build
+    build:
+      context: ./remote-android-device
+      dockerfile: Dockerfile
+    container_name: remote-android-dev
+    restart: always
+    env_file:
+      - .env.dev
+    environment:
+      - DB_USER=${DB_USERNAME}
+      - DB_NAME=${DB_DATABASE}
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./remote-android-device:/app
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # OPTIONAL: MONITORING & DEVELOPMENT TOOLS
+  # ==========================================
+  
+  # Redis Commander (Redis Management)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: platform-redis-commander-dev
+    restart: always
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - kiosk-net
+
+# ==========================================
+# NETWORKS
+# ==========================================
+
+networks:
+  kiosk-net:
+    driver: bridge
+    name: kiosk-net
+
+# ==========================================
+# VOLUMES
+# ==========================================
+# All volumes now use bind mounts to ./data-kiosk/
+# No need for named volumes

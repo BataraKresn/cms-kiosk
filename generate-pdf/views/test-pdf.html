@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Status Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .card {
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .chart-wrapper-lg {
+      height: 400px;
+    }
+    table th, table td {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2 class="mb-4">Status Monitoring Dashboard</h2>
+
+  <!-- Row 1: Pie Chart (Full Width) -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header bg-primary text-white">Device Status</div>
+        <div class="card-body">
+          <canvas id="deviceStatusChart" class="chart-wrapper-lg w-100"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Table Device Status -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header bg-primary text-white">Data Device Status</div>
+        <div class="card-body table-responsive">
+          <table id="status_device" class="table table-bordered table-striped table-sm">
+            <thead class="table-light">
+              <tr><th>No.</th><th>Nama</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <!-- Diisi dari JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Bar Chart Playlist -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header bg-success text-white">Graphpic Layout Of Media Playlist</div>
+        <div class="card-body">
+          <canvas id="mediaPlaybackDurationChart" class="chart-wrapper-lg w-100"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Table Playlist -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">Media Playback Status</div>
+        <div class="card-body table-responsive">
+          <table id="media_playlist" class="table table-bordered table-striped table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>No.</th>
+                <th>Nama</th>
+                <th>Nama Schedule</th>
+                <th>Nama Playlist</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Diisi dari JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript Integration -->
+<script>
+  const url = "https://kiosk.penerbitan-dpr.id"; // Base URL for API requests
+
+  // Device Status Chart
+  const deviceStatusCtx = document.getElementById('deviceStatusChart').getContext('2d');
+  async function DataStatusDevices() {
+    try {
+      const response = await fetch(`${url}/status_service`);
+      const fetchedData = await response.json();
+
+      const chartData = {
+        labels: [
+          "Connected : " + fetchedData.connect,
+          "Disconnected : " + fetchedData.disconnect,
+        ],
+        datasets: [{
+          label: 'Device Status',
+          data: [fetchedData.connect, fetchedData.disconnect],
+          backgroundColor: [
+            'rgb(54, 162, 235)', // Blue (Connected)
+            'rgb(255, 99, 132)', // Red (Disconnected)
+          ],
+          hoverOffset: 4
+        }]
+      };
+
+      new Chart(deviceStatusCtx, {
+        type: 'pie',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+            },
+            title: {
+              display: true,
+              text: 'Device Status'
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching device status data:", error);
+    }
+  }
+
+  // Media Playback Chart
+  const mediaPlaybackCtx = document.getElementById('mediaPlaybackDurationChart').getContext('2d');
+  async function DataMediaPlaybackDurationChart() {
+    try {
+      const response = await fetch(`${url}/graph_playlist`);
+      const fetchedData = await response.json();
+
+      const dataLabels = fetchedData.name.map((item, index) => `${item}: ${fetchedData.total[index]}`);
+      const chartData = {
+        labels: dataLabels,
+        datasets: [{
+          label: 'Graphpic Layout Of Media Playlist',
+          data: fetchedData.total,
+          backgroundColor: fetchedData.total.map((_, i) => `rgba(${(i * 50) % 255}, ${(i * 70) % 255}, ${(i * 90) % 255}, 0.5)`),
+          borderColor: fetchedData.total.map((_, i) => `rgba(${(i * 50) % 255}, ${(i * 70) % 255}, ${(i * 90) % 255}, 1)`),
+          borderWidth: 1
+        }]
+      };
+
+      new Chart(mediaPlaybackCtx, {
+        type: 'bar',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+            },
+            title: {
+              display: true,
+              text: 'Graphpic Layout Of Media Playlist'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              precision: 0
+            }
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching media playback duration data:", error);
+    }
+  }
+
+  // Table Data Fetcher
+  async function fetchStatusDevice() {
+    try {
+      const response = await fetch(`http://127.0.0.1:3333/data_table`);
+      const data = await response.json();
+
+      const statusDevices = data.status_device || [];
+      const mediaPlaylist = data.media_playlist || [];
+
+      // Populate Status Devices Table
+      const tableStatusBody = document.querySelector('#status_device tbody');
+      tableStatusBody.innerHTML = '';
+      statusDevices.forEach((row, index) => {
+        tableStatusBody.innerHTML += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${row.name || 'N/A'}</td>
+            <td>${row.status || 'N/A'}</td>
+          </tr>`;
+      });
+
+      // Populate Media Playlist Table
+      const tablePlaylistBody = document.querySelector('#media_playlist tbody');
+      tablePlaylistBody.innerHTML = '';
+      mediaPlaylist.forEach((row, index) => {
+        tablePlaylistBody.innerHTML += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${row.name || 'N/A'}</td>
+            <td>${row.schedule_name	 || 'N/A'}</td>
+            <td>${row.playlist_name	 || 'N/A'}</td>
+            <td>${row.total || 'N/A'}</td>
+          </tr>`;
+      });
+    } catch (error) {
+      console.error('Error fetching table data:', error);
+    }
+  }
+
+  // Load all data on page load
+  DataStatusDevices();
+  DataMediaPlaybackDurationChart();
+  fetchStatusDevice();
+</script>
+
+</body>
+</html>

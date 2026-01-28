@@ -1,0 +1,658 @@
+# Production Environment - All Microservices
+# Cosmic Media Streaming Platform
+
+services:
+  # ==========================================
+  # DATABASE & INFRASTRUCTURE SERVICES
+  # ==========================================
+  
+  # MariaDB Database (Shared by all services)
+  mariadb:
+    image: mariadb:10.11
+    container_name: platform-db-prod
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE:-platform}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_HOST: localhost  # Only allow root from localhost
+    volumes:
+      - ./data-kiosk/prod/mariadb:/var/lib/mysql
+      - ./platform.sql:/docker-entrypoint-initdb.d/01-platform.sql:ro
+      - ./restore.sql:/docker-entrypoint-initdb.d/02-restore.sql:ro
+      - ./data-kiosk/backups:/backups
+      - ./cosmic-media-streaming-dpr/mariadb/my-production.cnf:/etc/mysql/conf.d/custom.cnf:ro
+      - ./data-kiosk/logs/prod/mariadb:/var/log/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - kiosk-net
+    # Production config loaded from my-production.cnf
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: platform-redis-prod
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data-kiosk/prod/redis:/data
+    networks:
+      - kiosk-net
+    command: >
+      redis-server 
+      --appendonly yes 
+      --maxmemory 2gb 
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: platform-minio-prod
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET}
+    volumes:
+      - ./data-kiosk/prod/minio:/data
+      - ./data-kiosk/minio-backup:/backup
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - kiosk-net
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==========================================
+  # SERVICE #1: COSMIC MEDIA STREAMING (Laravel)
+  # Main Application - Media Management & CMS
+  # 3 Replicas for Load Balancing
+  # ==========================================
+  
+  cosmic-app-1:
+    image: kiosk-cosmic-app:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-app-1-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+      - APP_INSTANCE=1
+    env_file:
+      - .env.prod
+    volumes:
+      - ./.env.prod:/var/www/.env:ro
+      - ./cosmic-media-streaming-dpr/storage:/var/www/storage
+      - ./cosmic-media-streaming-dpr/bootstrap/cache:/var/www/bootstrap/cache
+      - ./cosmic-media-streaming-dpr/database/migrations:/var/www/database/migrations:ro
+      - ./data-kiosk/logs/cosmic-app-1:/var/www/storage/logs
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  cosmic-app-2:
+    image: kiosk-cosmic-app:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-app-2-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+      - APP_INSTANCE=2
+    env_file:
+      - .env.prod
+    volumes:
+      - ./.env.prod:/var/www/.env:ro
+      - ./cosmic-media-streaming-dpr/storage:/var/www/storage
+      - ./cosmic-media-streaming-dpr/bootstrap/cache:/var/www/bootstrap/cache
+      - ./cosmic-media-streaming-dpr/database/migrations:/var/www/database/migrations:ro
+      - ./data-kiosk/logs/cosmic-app-2:/var/www/storage/logs
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  cosmic-app-3:
+    image: kiosk-cosmic-app:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-app-3-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+      - APP_INSTANCE=3
+    env_file:
+      - .env.prod
+    volumes:
+      - ./.env.prod:/var/www/.env:ro
+      - ./cosmic-media-streaming-dpr/storage:/var/www/storage
+      - ./cosmic-media-streaming-dpr/bootstrap/cache:/var/www/bootstrap/cache
+      - ./cosmic-media-streaming-dpr/database/migrations:/var/www/database/migrations:ro
+      - ./data-kiosk/logs/cosmic-app-3:/var/www/storage/logs
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  # ==========================================
+  # VIDEO QUEUE WORKERS (3 Workers)
+  # Process: Video encoding, FFmpeg jobs
+  # ==========================================
+  
+  cosmic-queue-video-1:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-video-1-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-video-1:/var/www/storage/logs
+    command: php artisan queue:work --queue=video --sleep=3 --tries=3 --max-time=7200 --timeout=1800
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  cosmic-queue-video-2:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-video-2-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-video-2:/var/www/storage/logs
+    command: php artisan queue:work --queue=video --sleep=3 --tries=3 --max-time=7200 --timeout=1800
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  cosmic-queue-video-3:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-video-3-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-video-3:/var/www/storage/logs
+    command: php artisan queue:work --queue=video --sleep=3 --tries=3 --max-time=7200 --timeout=1800
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  # ==========================================
+  # IMAGE QUEUE WORKERS (3 Workers)
+  # Process: Image optimization, thumbnails
+  # ==========================================
+  
+  cosmic-queue-image-1:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-image-1-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-image-1:/var/www/storage/logs
+    command: php artisan queue:work --queue=image --sleep=2 --tries=3 --max-time=3600 --timeout=600
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  cosmic-queue-image-2:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-image-2-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-image-2:/var/www/storage/logs
+    command: php artisan queue:work --queue=image --sleep=2 --tries=3 --max-time=3600 --timeout=600
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  cosmic-queue-image-3:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-image-3-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-image-3:/var/www/storage/logs
+    command: php artisan queue:work --queue=image --sleep=2 --tries=3 --max-time=3600 --timeout=600
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ==========================================
+  # DEFAULT QUEUE WORKERS (2 Workers)
+  # Process: Other jobs (email, PDF, etc)
+  # ==========================================
+  
+  cosmic-queue-default-1:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-default-1-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-default-1:/var/www/storage/logs
+    command: php artisan queue:work --queue=default --sleep=3 --tries=3 --max-time=3600 --timeout=600
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  cosmic-queue-default-2:
+    image: kiosk-cosmic-queue:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-queue-default-2-prod
+    restart: always
+    working_dir: /var/www
+    environment:
+      - TZ=Asia/Jakarta
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-queue-default-2:/var/www/storage/logs
+    command: php artisan queue:work --queue=default --sleep=3 --tries=3 --max-time=3600 --timeout=600
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # Scheduler for Laravel
+  cosmic-scheduler:
+    image: kiosk-cosmic-scheduler:prod
+    pull_policy: build
+    build:
+      context: ./cosmic-media-streaming-dpr
+      dockerfile: Dockerfile
+    container_name: cosmic-scheduler-prod
+    restart: always
+    working_dir: /var/www
+    env_file:
+      - .env.prod
+    volumes:
+      - ./data-kiosk/logs/cosmic-scheduler:/var/www/storage/logs
+    command: bash -c "while true; do php artisan schedule:run >> /dev/null 2>&1; sleep 60; done"
+    depends_on:
+      - cosmic-app-1
+      - mariadb
+      - redis
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==========================================
+  # SERVICE #2: GENERATE PDF (Node.js)
+  # PDF Generation & WebSocket Service
+  # ==========================================
+  
+  generate-pdf:
+    image: kiosk-generate-pdf:prod
+    pull_policy: build
+    build:
+      context: ./generate-pdf
+      dockerfile: Dockerfile
+    container_name: generate-pdf-prod
+    restart: always
+    env_file:
+      - .env.prod
+    environment:
+      - DB_USER=${DB_USERNAME}
+      - DB_NAME=${DB_DATABASE}
+    # Ports not exposed - accessed via Nginx reverse proxy
+    volumes:
+      - ./generate-pdf/uploads:/usr/src/app/uploads
+      - ./generate-pdf/hls_output:/usr/src/app/hls_output
+      - ./data-kiosk/logs/generate-pdf:/usr/src/app/logs
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3333/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "5"
+
+  # ==========================================
+  # SERVICE #3: REMOTE ANDROID DEVICE (Python)
+  # Device Management & Control Service
+  # ==========================================
+  
+  remote-android:
+    image: kiosk-remote-android:prod
+    pull_policy: build
+    build:
+      context: ./remote-android-device
+      dockerfile: Dockerfile
+    container_name: remote-android-prod
+    restart: always
+    env_file:
+      - .env.prod
+    environment:
+      - DB_USER=${DB_USERNAME}
+      - DB_NAME=${DB_DATABASE}
+      - PORT=3001
+    # Port not exposed - accessed via Nginx reverse proxy
+    volumes:
+      - ./data-kiosk/logs/remote-android:/app/logs
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "5"
+
+  # ==========================================
+  # NGINX REVERSE PROXY (Optional but Recommended)
+  # ==========================================
+  
+  nginx:
+    image: nginx:alpine
+    container_name: platform-nginx-prod
+    restart: always
+    environment:
+      - TZ=Asia/Jakarta
+    ports:
+      - "8080:80"      # HTTP - Custom port
+      - "8443:443"     # HTTPS - Custom port
+    volumes:
+      - ./cosmic-media-streaming-dpr/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./data-kiosk/nginx/ssl:/etc/nginx/ssl:ro
+      - ./data-kiosk/nginx/logs:/var/log/nginx
+      - ./data-kiosk/nginx/cache:/var/cache/nginx
+    depends_on:
+      - cosmic-app-1
+      - cosmic-app-2
+      - cosmic-app-3
+      - generate-pdf
+      - remote-android
+      - remote-control-relay
+    networks:
+      - kiosk-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ==========================================
+  # SERVICE #5: REMOTE CONTROL RELAY SERVER
+  # WebSocket relay for Android remote control
+  # ==========================================
+  
+  remote-control-relay:
+    image: kiosk-remote-relay:prod
+    pull_policy: build
+    build:
+      context: ./remote-control-relay
+      dockerfile: Dockerfile
+    container_name: remote-relay-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - HTTP_PORT=3002
+      - WS_PORT=3003
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_DATABASE}
+      - LOG_LEVEL=info
+    ports:
+      - "3002:3002"  # HTTP API
+      - "3003:3003"  # WebSocket
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - kiosk-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ==========================================
+# NETWORKS
+# ==========================================
+
+networks:
+  kiosk-net:
+    driver: bridge
+    name: kiosk-net
+
+# ==========================================
+# VOLUMES
+# ==========================================
+# All volumes now use bind mounts to ./data-kiosk/
+# No need for named volumes

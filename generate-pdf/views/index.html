@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMS DPR RI</title>
+  <link rel="icon" type="image/svg" href="https://kiosk.penerbitan-dpr.id/images/logo.svg" loading="lazy" />
+  <link rel="stylesheet" href="demo.css" />
+  <script src="node_modules/gridstack/dist/gridstack-all.js"></script>
+  <link href="node_modules/gridstack/dist/gridstack.min.css" rel="stylesheet" />
+</head>
+
+<body>
+  <!-- Fixed Button Container -->
+  <div class="button-container">
+    <button onclick="addItem()">Add New Item</button>
+    <button onclick="saveLayout()">Save Layout</button>
+    <button onclick="redirectURL()">Back</button>
+  </div>
+
+  <!-- GridStack Container -->
+  <div class="grid-stack-container">
+    <div class="grid-stack"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script type="text/javascript">
+    // Initialize the GridStack
+    let grid = GridStack.init({
+      float: true,
+      resizable: { handles: 'all' },
+      margin: 0,
+      column: 18,
+      row: 32,
+    });
+
+    let count = 1; // Counter for dynamic item content
+
+    // Function to update size display of a widget
+    function updateSizeDisplay(item, widthPx, heightPx) {
+      let sizeDisplay = item.querySelector('.size-display');
+      if (!sizeDisplay) {
+        sizeDisplay = document.createElement('div');
+        sizeDisplay.classList.add('size-display');
+        item.appendChild(sizeDisplay);
+      }
+      sizeDisplay.innerHTML = `W: ${widthPx}px, H: ${heightPx}px`;
+    }
+
+    // Function to process loaded items and add size display
+    function processLoadedItems() {
+      const items = document.querySelectorAll('.grid-stack-item');
+      items.forEach(item => {
+        const rect = item.getBoundingClientRect();
+        updateSizeDisplay(item, Math.round(rect.width) * 4, Math.round(rect.height) * 4);
+      });
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const layoutIds = params.get('id');
+    console.log(layoutIds)
+    async function fetchDataLayout() {
+      const url = "/data-layout?layout_id=" + layoutIds;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        grid.removeAll().load(data); // Load layout
+
+        // Add delete buttons to each loaded item
+        const items = document.querySelectorAll('.grid-stack-item');
+        items.forEach((item, index) => {
+          const content = item.querySelector('.grid-stack-item-content');
+          if (content) {
+            const deleteButton = document.createElement('button');
+            deleteButton.innerText = 'Delete';
+            deleteButton.className = 'delete-button';
+            deleteButton.onclick = () => deleteItem(deleteButton);
+            content.appendChild(deleteButton);
+          }
+        });
+
+        setTimeout(() => {
+          processLoadedItems(); // Update size displays
+        }, 100); // Delay to ensure DOM is updated
+      } catch (error) {
+        console.error("Error fetching data layout:", error);
+        Swal.fire("Error", "Failed to fetch layout data", "error");
+      }
+    }
+
+    fetchDataLayout(); // Fetch data layout asynchronously    
+
+    // Function to delete a widget
+    function deleteItem(button) {
+      const item = button.closest('.grid-stack-item');
+      grid.removeWidget(item);
+    }
+
+    // Function to add a new widget to the grid
+    function addItem() {
+      // Find the maximum y value among existing items
+      const existingItems = grid.getGridItems();
+      const maxY = existingItems.reduce((max, item) => {
+        return Math.max(max, item.y + item.h);
+      }, 0);
+
+      const widgetEl = document.createElement('div');
+      widgetEl.className = 'grid-stack-item';
+      widgetEl.innerHTML = `
+        <div class="grid-stack-item-content" style="background-color: #0056b3;">
+          Item ${count++}
+          <button onclick="deleteItem(this)" class="delete-button">Delete</button>
+        </div>`;
+
+      grid.makeWidget(widgetEl, { x: 0, y: maxY, w: 4, h: 2 });
+      const rect = widgetEl.getBoundingClientRect();
+      updateSizeDisplay(widgetEl, Math.round(rect.width) * 4, Math.round(rect.height) * 4);
+    }
+
+    // Function to save the layout of the grid
+    async function saveLayout() {
+      const serializedData = grid.save();
+      console.log('Serialized Layout:', serializedData);
+
+      const requestData = serializedData.map(item => ({
+        layout_id: layoutIds,
+        x: item.x,
+        y: item.y,
+        w: item.w,
+        h: item.h,
+      }));
+
+      const requestOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          spots: requestData
+        }),
+      };
+
+      try {
+        const env = window.location.origin + "/api";
+        const response = await fetch(env + "/spots/create/" + layoutIds, requestOptions);
+        const result = await response.json();
+
+        if (response.ok) {
+          Swal.fire({
+            title: 'Success!',
+            text: 'Save successfully!',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          });
+        } else {
+          Swal.fire({
+            title: 'Error!',
+            text: result.message || 'Save unsuccessful!',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          title: 'Error!',
+          text: 'An error occurred while saving.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+        console.error('Error:', error);
+      }
+
+    }
+
+    // Handle resizing to update size indicators
+    grid.on('resizestop', (event, element) => {
+      const rect = element.getBoundingClientRect();
+      updateSizeDisplay(element, Math.round(rect.width) * 4, Math.round(rect.height) * 4);
+    });
+
+    async function redirectURL(){
+      window.location.href = '/back-office/layouts';
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,62 @@
+# Development Dockerfile - For local development only
+FROM php:8.3-fpm
+
+# Set working directory
+WORKDIR /var/www
+
+# Install system dependencies and PHP extensions
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libicu-dev \
+    ffmpeg \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Install Node.js 20.x LTS and npm
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g concurrently && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy existing application directory contents and set permissions
+COPY . /var/www
+RUN chown -R www-data:www-data /var/www
+
+# Set PHP configurations for file uploads
+RUN echo "file_uploads = On\n" \
+         "memory_limit = 2048M\n" \
+         "upload_max_filesize = 2048M\n" \
+         "post_max_size = 2048M\n" \
+         "max_execution_time = 300\n" \
+    >> /usr/local/etc/php/conf.d/uploads.ini
+
+# Install Laravel dependencies
+RUN composer install --optimize-autoloader
+
+# Install npm dependencies
+RUN npm install
+
+# Set the correct file permissions
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# Expose port 8000 for Laravel server and 5173 for Vite
+EXPOSE 8000 5173
+
+# Start the Laravel development server and Vite using npm run dev
+CMD ["npm", "run", "dev"]

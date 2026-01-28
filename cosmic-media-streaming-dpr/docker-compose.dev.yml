@@ -1,0 +1,231 @@
+# Development Environment - Cosmic Media Streaming DPR Only
+# This file is for developing cosmic-media-streaming-dpr independently
+
+services:
+  # ==========================================
+  # INFRASTRUCTURE SERVICES
+  # ==========================================
+  
+  # MariaDB Database
+  mariadb:
+    image: mariadb:10.11
+    container_name: cosmic-media-mariadb-dev
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password_dev}
+      MARIADB_DATABASE: ${DB_DATABASE:-platform}
+      MARIADB_USER: ${DB_USERNAME:-platform_user}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-platform_password_dev}
+    volumes:
+      - mariadb_data_dev:/var/lib/mysql
+      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql:ro
+    ports:
+      - "3306:3306"
+    networks:
+      - cosmic-network-dev
+    command: --max_allowed_packet=1073741824 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: cosmic-media-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - cosmic-network-dev
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: cosmic-media-minio-dev
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET:-minioadmin123}
+    volumes:
+      - minio_data_dev:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - cosmic-network-dev
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # MinIO Client - Create bucket on startup
+  minio-client:
+    image: minio/mc:latest
+    container_name: cosmic-media-minio-client-dev
+    depends_on:
+      - minio
+    networks:
+      - cosmic-network-dev
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc alias set minio http://minio:9000 ${MINIO_KEY:-minioadmin} ${MINIO_SECRET:-minioadmin123};
+      /usr/bin/mc mb minio/${MINIO_BUCKET:-cosmic-media} --ignore-existing;
+      /usr/bin/mc anonymous set download minio/${MINIO_BUCKET:-cosmic-media};
+      /usr/bin/mc admin info minio;
+      exit 0;
+      "
+
+  # ==========================================
+  # APPLICATION SERVICES
+  # ==========================================
+  
+  # Laravel Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cosmic-media-app-dev
+    restart: unless-stopped
+    working_dir: /var/www
+    env_file:
+      - .env.dev
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+      - /var/www/vendor
+      - /var/www/node_modules
+    ports:
+      - "8000:8000"  # Laravel application
+      - "5173:5173"  # Vite dev server
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - cosmic-network-dev
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Queue Worker
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cosmic-media-queue-dev
+    restart: unless-stopped
+    working_dir: /var/www
+    env_file:
+      - .env.dev
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+      - /var/www/vendor
+    depends_on:
+      - app
+      - mariadb
+      - redis
+      - minio
+    networks:
+      - cosmic-network-dev
+    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=300 --verbose
+
+  # Scheduler (Cron)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cosmic-media-scheduler-dev
+    restart: unless-stopped
+    working_dir: /var/www
+    env_file:
+      - .env.dev
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+      - /var/www/vendor
+    depends_on:
+      - app
+      - mariadb
+      - redis
+    networks:
+      - cosmic-network-dev
+    command: >
+      bash -c "
+      while true; do
+        php artisan schedule:run >> /dev/null 2>&1;
+        sleep 60;
+      done
+      "
+
+  # ==========================================
+  # DEVELOPMENT TOOLS
+  # ==========================================
+  
+  # phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: cosmic-media-phpmyadmin-dev
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USERNAME:-platform_user}
+      PMA_PASSWORD: ${DB_PASSWORD:-platform_password_dev}
+      UPLOAD_LIMIT: 1024M
+    ports:
+      - "8080:80"
+    depends_on:
+      - mariadb
+    networks:
+      - cosmic-network-dev
+
+  # Redis Commander
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cosmic-media-redis-commander-dev
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - cosmic-network-dev
+
+# ==========================================
+# NETWORKS
+# ==========================================
+
+networks:
+  cosmic-network-dev:
+    driver: bridge
+
+# ==========================================
+# VOLUMES
+# ==========================================
+
+volumes:
+  mariadb_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  minio_data_dev:
+    driver: local

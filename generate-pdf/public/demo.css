@@ -1,0 +1,289 @@
+/* Display size info */
+.size-display {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    border-radius: 3px;
+    z-index: 10;
+}
+
+/* GridStack Container */
+.grid-stack {
+    background: #ffffff;
+}
+
+.grid-stack.grid-stack-static {
+    background: #ffffff;
+}
+
+/* GridStack Items */
+.grid-stack-item-content {
+    display: flex;
+    justify-content: center;  /* Centers content horizontally */
+    align-items: center;      /* Centers content vertically */
+    text-align: center;       /* Ensures text inside is centered */
+    font-size: small;         /* Adjust text size */
+    background-color: #0056b3; /* Background color */
+    border: 2px solid #ffffff; /* Border color and thickness */
+    border-radius: 4px;       /* Smooth corners */
+    box-shadow: none !important; /* Prevents any shadow from overriding */
+    position: relative;       /* Keeps the position relative for inner elements */
+    padding: 10px;            /* Adds space inside the container */
+    color: white;             /* Ensures text color is white for visibility */
+    width: 100%;              /* Ensures the item takes full width available */
+    height: 100%;             /* Ensures the item takes full height available */
+    box-sizing: border-box;   /* Prevents padding from affecting the width/height */
+}
+
+/* Nested GridStack Styles */
+.grid-stack>.grid-stack-item.grid-stack-sub-grid>.grid-stack-item-content {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px;
+}
+
+.grid-stack.grid-stack-nested {
+    background: none;
+}
+
+/* Item removing state */
+.grid-stack-item-removing {
+    opacity: 0.5;
+}
+
+/* Layout Helpers */
+.flex {
+    display: flex;
+}
+
+.space-x-2>*:not(:last-child) {
+    margin-right: 8px;
+}
+
+/* Delete Button */
+.delete-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 10px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 5px;
+    cursor: pointer;
+}
+
+.delete-button:hover {
+    background-color: darkred;
+}
+
+/* Grid Item Width and Position */
+.grid-stack>.grid-stack-item {
+    min-width: 5.56%;
+    /* Simplified for readability */
+    width: 100%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="1"],
+.grid-stack>.grid-stack-item[gs-x="1"],
+.grid-stack>.grid-stack-item[gs-min-w="1"],
+.grid-stack>.grid-stack-item[gs-max-w="1"] {
+    width: 5.56%;
+    left: 5.56%;
+}
+
+/* Auto-generate similar rules for gs-w, gs-x from 2 to 17 */
+.grid-stack>.grid-stack-item[gs-w="2"] {
+    width: 11.11%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="2"] {
+    left: 11.11%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="3"] {
+    width: 16.67%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="3"] {
+    left: 16.67%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="4"] {
+    width: 22.22%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="4"] {
+    left: 22.22%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="5"] {
+    width: 27.78%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="5"] {
+    left: 27.78%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="6"] {
+    width: 33.33%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="6"] {
+    left: 33.33%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="7"] {
+    width: 38.89%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="7"] {
+    left: 38.89%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="8"] {
+    width: 44.44%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="8"] {
+    left: 44.44%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="9"] {
+    width: 50.00%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="9"] {
+    left: 50.00%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="10"] {
+    width: 55.56%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="10"] {
+    left: 55.56%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="11"] {
+    width: 61.11%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="11"] {
+    left: 61.11%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="12"] {
+    width: 66.67%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="12"] {
+    left: 66.67%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="13"] {
+    width: 72.22%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="13"] {
+    left: 72.22%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="14"] {
+    width: 77.78%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="14"] {
+    left: 77.78%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="15"] {
+    width: 83.33%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="15"] {
+    left: 83.33%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="16"] {
+    width: 88.89%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="16"] {
+    left: 88.89%;
+}
+
+.grid-stack>.grid-stack-item[gs-w="17"] {
+    width: 94.44%;
+}
+
+.grid-stack>.grid-stack-item[gs-x="17"] {
+    left: 94.44%;
+}
+
+/* Default overflow fix */
+.grid-stack-item-content {
+    overflow: hidden !important;
+}
+
+.grid-stack-container {
+    width: 270px;
+    height: 480px;
+}
+
+body,
+html {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: black;
+}
+
+/* Style for the fixed buttons container */
+.button-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: #ffffff;
+    /* White background */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow for depth */
+    padding: 10px 20px;
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+/* Style for buttons */
+.button-container button {
+    padding: 10px 20px;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.button-container button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.button-container button:active {
+    background-color: #003f7f;
+    transform: translateY(0);
+}
+
+.grid-stack-container {
+    margin-top: 70px;
+}

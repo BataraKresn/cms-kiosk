@@ -1,0 +1,3148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumentasi Teknis - Cosmic Media Streaming Platform</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 10px;
+            page-break-before: always;
+        }
+        h1:first-of-type {
+            page-break-before: auto;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #5a6c7d;
+            margin-top: 20px;
+        }
+        h4 {
+            color: #7f8c8d;
+        }
+        .cover {
+            text-align: center;
+            padding: 100px 0;
+            page-break-after: always;
+        }
+        .cover h1 {
+            font-size: 36px;
+            border: none;
+            margin-bottom: 20px;
+        }
+        .cover .subtitle {
+            font-size: 20px;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+        }
+        .cover .info {
+            margin-top: 60px;
+            font-size: 14px;
+        }
+        .toc {
+            page-break-after: always;
+        }
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            page-break-inside: avoid;
+        }
+        pre code {
+            background-color: transparent;
+            color: #ecf0f1;
+        }
+        .box {
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #ecf0f1;
+            page-break-inside: avoid;
+        }
+        .warning {
+            border-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+        .info {
+            border-color: #3498db;
+            background-color: #d6eaf8;
+        }
+        .success {
+            border-color: #27ae60;
+            background-color: #d5f4e6;
+        }
+        .architecture-box {
+            border: 3px solid #2c3e50;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #fff;
+            page-break-inside: avoid;
+        }
+        .flow-diagram {
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+            margin: 20px 0;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        /* Mermaid Diagram Styling */
+        .mermaid {
+            min-height: 800px;
+            background-color: #ffffff;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .mermaid svg {
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 700px;
+        }
+        
+        @media print {
+            .mermaid {
+                min-height: 1000px;
+                page-break-inside: avoid;
+            }
+            .mermaid svg {
+                min-height: 900px;
+                transform: scale(1.2);
+                transform-origin: top left;
+            }
+        }
+        
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        .badge-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .badge-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        .badge-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        .badge-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        @media print {
+            body {
+                font-size: 12pt;
+            }
+            h1 {
+                page-break-after: avoid;
+            }
+            h2, h3 {
+                page-break-after: avoid;
+            }
+            .mermaid {
+                min-height: 1000px;
+                page-break-inside: avoid;
+            }
+            .mermaid svg {
+                min-height: 900px;
+                transform: scale(1.2);
+                transform-origin: top left;
+            }
+        }
+    </style>
+    
+    <!-- Mermaid JS Library -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 20
+            },
+            themeVariables: {
+                fontSize: '16px',
+                fontFamily: 'Arial, sans-serif'
+            }
+        });
+    </script>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+    <h1>DOKUMENTASI TEKNIS</h1>
+    <div class="subtitle">Cosmic Media Streaming Platform</div>
+    <div class="subtitle">Digital Signage & Kiosk Management System</div>
+    
+    <div style="margin-top: 80px;">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 24 24'%3E%3Cpath fill='%233498db' d='M21 3H3c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5a2 2 0 0 0-2-2zm0 14H3V5h18v12z'/%3E%3C/svg%3E" alt="Logo">
+    </div>
+    
+    <div class="info">
+        <p><strong>Versi Dokumen:</strong> 1.0</p>
+        <p><strong>Tanggal:</strong> 21 Januari 2026</p>
+        <p><strong>Status:</strong> Final</p>
+    </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+    <h1>DAFTAR ISI</h1>
+    <ul>
+        <li><strong>1.</strong> RINGKASAN EKSEKUTIF</li>
+        <li><strong>2.</strong> ARSITEKTUR SISTEM
+            <ul style="list-style: none;">
+                <li>2.1. Gambaran Umum Sistem</li>
+                <li>2.2. Diagram Arsitektur</li>
+                <li>2.3. Flow Komunikasi Antar Komponen</li>
+            </ul>
+        </li>
+        <li><strong>3.</strong> COSMIC-MEDIA-STREAMING-DPR (Backend Core)
+            <ul style="list-style: none;">
+                <li>3.1. Deskripsi Project</li>
+                <li>3.2. Stack Teknologi</li>
+                <li>3.3. Struktur Database</li>
+                <li>3.4. API Endpoints</li>
+                <li>3.5. Fitur Utama</li>
+            </ul>
+        </li>
+        <li><strong>4.</strong> GENERATE-PDF (PDF Generation Service)
+            <ul style="list-style: none;">
+                <li>4.1. Deskripsi Project</li>
+                <li>4.2. Stack Teknologi</li>
+                <li>4.3. API Endpoints</li>
+                <li>4.4. Integrasi dengan Core System</li>
+            </ul>
+        </li>
+        <li><strong>5.</strong> REMOTE-ANDROID-DEVICE (Device Management)
+            <ul style="list-style: none;">
+                <li>5.1. Deskripsi Project</li>
+                <li>5.2. Stack Teknologi</li>
+                <li>5.3. API Endpoints</li>
+                <li>5.4. Real-time Monitoring</li>
+            </ul>
+        </li>
+        <li><strong>6.</strong> INTEGRASI DENGAN APK ANDROID
+            <ul style="list-style: none;">
+                <li>6.1. Arsitektur Komunikasi</li>
+                <li>6.2. Protocol & Format Data</li>
+                <li>6.3. Sequence Diagram</li>
+            </ul>
+        </li>
+        <li><strong>7.</strong> DEPLOYMENT & INFRASTRUCTURE
+            <ul style="list-style: none;">
+                <li>7.1. Requirements</li>
+                <li>7.2. Docker Configuration</li>
+                <li>7.3. Network Architecture</li>
+            </ul>
+        </li>
+        <li><strong>8.</strong> SECURITY & PERFORMANCE</li>
+        <li><strong>9.</strong> MAINTENANCE & TROUBLESHOOTING</li>
+    </ul>
+</div>
+
+<!-- CHAPTER 1 -->
+<h1>1. RINGKASAN EKSEKUTIF</h1>
+
+<h2>1.1. Tentang Platform</h2>
+<p>
+    <strong>Cosmic Media Streaming Platform</strong> adalah sistem manajemen konten digital signage yang komprehensif, dirancang untuk mengelola, menjadwalkan, dan mendistribusikan konten multimedia ke berbagai perangkat display (kiosk) secara terpusat dan real-time.
+</p>
+
+<div class="box info">
+    <h4>🎯 Tujuan Sistem</h4>
+    <ul>
+        <li>Manajemen konten multimedia terpusat untuk multiple displays</li>
+        <li>Scheduling otomatis dengan time-based triggering</li>
+        <li>Real-time monitoring dan kontrol device Android</li>
+        <li>Reporting dan analytics untuk playback history</li>
+        <li>Remote management dan troubleshooting</li>
+    </ul>
+</div>
+
+<h2>1.2. Komponen Utama Sistem</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Komponen</th>
+            <th>Teknologi</th>
+            <th>Fungsi Utama</th>
+            <th>Port</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>cosmic-media-streaming-dpr</strong></td>
+            <td>Laravel 10 + Filament 3</td>
+            <td>Backend Core, CMS, API Server</td>
+            <td>80/443</td>
+        </tr>
+        <tr>
+            <td><strong>generate-pdf</strong></td>
+            <td>Node.js + Puppeteer</td>
+            <td>PDF Generation & Custom Layout Builder</td>
+            <td>3333, 3334</td>
+        </tr>
+        <tr>
+            <td><strong>remote-android-device</strong></td>
+            <td>FastAPI + Python</td>
+            <td>Device Monitoring & Management</td>
+            <td>3001</td>
+        </tr>
+        <tr>
+            <td><strong>Android APK (Kiosk)</strong></td>
+            <td>Android Native</td>
+            <td>Content Player & Display Client</td>
+            <td>-</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>1.3. Key Features</h2>
+<div class="box success">
+    <h4>✨ Fitur-fitur Unggulan</h4>
+    <ul>
+        <li><strong>Drag & Drop Layout Builder:</strong> Interface visual untuk membuat layout custom dengan grid system</li>
+        <li><strong>Multi-format Content Support:</strong> Video (MP4, AVI), Image (JPG, PNG), HLS Streaming, HTML5, Live URL, QR Code</li>
+        <li><strong>Advanced Scheduling:</strong> Time-based scheduling dengan multiple playlists per display</li>
+        <li><strong>Real-time Updates:</strong> Pusher WebSocket untuk instant content updates</li>
+        <li><strong>Device Monitoring:</strong> Real-time status monitoring dengan auto-reconnect</li>
+        <li><strong>Role-based Access Control:</strong> Multi-user dengan permission management</li>
+        <li><strong>Performance Optimization:</strong> Redis caching, queue-based processing, lazy loading</li>
+        <li><strong>Comprehensive Reporting:</strong> Dashboard analytics dengan export PDF/Excel</li>
+    </ul>
+</div>
+
+<!-- CHAPTER 2 -->
+<h1>2. ARSITEKTUR SISTEM</h1>
+
+<h2>2.1. Gambaran Umum Sistem</h2>
+<p>
+    Platform ini menggunakan arsitektur <strong>microservices</strong> dengan pemisahan concerns yang jelas. Setiap service memiliki tanggung jawab spesifik dan berkomunikasi melalui REST API dan WebSocket.
+</p>
+
+<div class="architecture-box">
+    <h3>Arsitektur High-Level</h3>
+    <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────────────┐
+│                      ADMIN WEB INTERFACE                        │
+│                   (Filament 3 + Livewire 3)                     │
+│                   http://domain.com/back-office                 │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             │ HTTPS/API
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│          COSMIC-MEDIA-STREAMING-DPR (Core Backend)              │
+│                     Laravel 10 + MySQL                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │   Filament   │  │   REST API   │  │   Pusher     │         │
+│  │   Admin      │  │   Endpoints  │  │   WebSocket  │         │
+│  └──────────────┘  └──────────────┘  └──────────────┘         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │   Redis      │  │   Queue      │  │   Storage    │         │
+│  │   Cache      │  │   Jobs       │  │   S3/Local   │         │
+│  └──────────────┘  └──────────────┘  └──────────────┘         │
+└───────┬─────────────────┬─────────────────┬────────────────────┘
+        │                 │                 │
+        │ API             │ API             │ WebSocket
+        │                 │                 │
+┌───────▼─────────┐ ┌─────▼──────────┐ ┌──▼─────────────────────┐
+│   GENERATE-PDF  │ │ REMOTE-ANDROID │ │  ANDROID APK (Client)  │
+│   (Node.js)     │ │   (FastAPI)    │ │                        │
+│                 │ │                │ │  ┌──────────────────┐  │
+│ • PDF Export    │ │ • Device       │ │  │  WebView Player  │  │
+│ • Layout Build  │ │   Monitoring   │ │  │  Video Player    │  │
+│ • Custom Views  │ │ • Status       │ │  │  Image Viewer    │  │
+│ • Reports       │ │   Tracking     │ │  │  HLS Player      │  │
+│                 │ │ • Health Check │ │  └──────────────────┘  │
+│ Port: 3333      │ │ Port: 3001     │ │                        │
+│       3334      │ │                │ │  • Content Playback    │
+└─────────────────┘ └────────────────┘ │  • Layout Rendering    │
+                                        │  • Real-time Sync      │
+                                        │  • Offline Caching     │
+                                        └────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    SHARED INFRASTRUCTURE                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │   MySQL DB   │  │   Redis      │  │   S3/MinIO   │         │
+│  │   Platform   │  │   Cache      │  │   Storage    │         │
+│  └──────────────┘  └──────────────┘  └──────────────┘         │
+└─────────────────────────────────────────────────────────────────┘
+    </div>
+</div>
+
+<h2>2.2. Flow Komunikasi Antar Komponen</h2>
+
+<h3>2.2.1. Content Update Flow</h3>
+<div class="flow-diagram">
+[Admin User]
+     │
+     │ 1. Upload Media / Update Layout
+     ▼
+[Laravel Backend]
+     │
+     │ 2. Save to Database & Storage
+     │
+     ├─→ 3a. Trigger Queue Job (RefreshDisplayJob)
+     │        │
+     │        └─→ Process in Background
+     │
+     └─→ 3b. Send Pusher Event
+              │
+              ▼
+         [WebSocket Server]
+              │
+              │ 4. Broadcast to Clients
+              ▼
+         [Android APK]
+              │
+              │ 5. Receive Update Signal
+              │
+              ├─→ 6a. Fetch New Layout Data (API Call)
+              │
+              └─→ 6b. Download New Media Files
+                       │
+                       ▼
+                  7. Update Display & Cache
+</div>
+
+<h3>2.2.2. Device Monitoring Flow</h3>
+<div class="flow-diagram">
+[Remote-Android Service]
+     │
+     │ Every 3 seconds
+     │
+     ▼
+1. Query MySQL for Device List
+     │
+     ▼
+2. Parallel HTTP Ping to Each Device
+     │
+     ├─→ Device A (http://192.168.x.x/ping)
+     ├─→ Device B (http://192.168.x.x/ping)
+     └─→ Device C (http://192.168.x.x/ping)
+     │
+     ▼
+3. Update Status in Database
+     │   - Connected (200 OK)
+     │   - Disconnected (Timeout/Error)
+     │
+     ▼
+4. Stream via Server-Sent Events (SSE)
+     │
+     ▼
+[Admin Dashboard]
+     │
+     └─→ Real-time Status Display
+</div>
+
+<h3>2.2.3. PDF Generation Flow</h3>
+<div class="flow-diagram">
+[Admin User]
+     │
+     │ 1. Request Report Export
+     ▼
+[Laravel Backend]
+     │
+     │ 2. Generate Report URL with Parameters
+     ▼
+[Generate-PDF Service]
+     │
+     │ 3. Launch Puppeteer Browser
+     │
+     ├─→ 4. Load Report URL
+     │        │
+     │        └─→ Fetch data from MySQL
+     │             Render charts & tables
+     │
+     ├─→ 5. Wait for Content Ready (networkidle0)
+     │
+     └─→ 6. Generate PDF File
+          │
+          ▼
+     7. Return PDF to Client
+</div>
+
+<h2>2.3. Data Flow Architecture</h2>
+
+<h3>2.3.1. Database Schema (Simplified)</h3>
+<div class="flow-diagram">
+┌─────────────┐       ┌──────────────┐       ┌─────────────┐
+│   displays  │──────▶│  schedules   │──────▶│  playlists  │
+│             │       │              │       │             │
+│ • id        │       │ • id         │       │ • id        │
+│ • name      │       │ • name       │       │ • name      │
+│ • url       │       │ • start_time │       │ • duration  │
+│ • status    │       │ • end_time   │       │             │
+│ • schedule  │       │              │       │             │
+└─────────────┘       └──────────────┘       └─────────────┘
+                                                     │
+                                                     │
+                      ┌──────────────────────────────┘
+                      │
+                      ▼
+                ┌─────────────────┐       ┌─────────────┐
+                │ playlist_layouts│──────▶│   layouts   │
+                │                 │       │             │
+                │ • playlist_id   │       │ • id        │
+                │ • layout_id     │       │ • name      │
+                │ • order         │       │ • grid_data │
+                └─────────────────┘       │ • html      │
+                                          └─────────────┘
+                                                 │
+                                                 │
+                          ┌──────────────────────┴──────────────┐
+                          │                                     │
+                          ▼                                     ▼
+                   ┌─────────────┐                     ┌──────────────┐
+                   │   medias    │                     │    spots     │
+                   │             │                     │              │
+                   │ • id        │                     │ • id         │
+                   │ • type      │                     │ • layout_id  │
+                   │ • path      │                     │ • media_id   │
+                   │ • duration  │                     │ • position   │
+                   └─────────────┘                     └──────────────┘
+
+┌─────────────┐
+│   remotes   │  ← Managed by remote-android-device
+│             │
+│ • id        │
+│ • name      │
+│ • url       │
+│ • status    │
+└─────────────┘
+</div>
+
+<!-- CHAPTER 3 -->
+<h1>3. COSMIC-MEDIA-STREAMING-DPR</h1>
+
+<h2>3.1. Deskripsi Project</h2>
+<p>
+    <strong>cosmic-media-streaming-dpr</strong> adalah core backend system yang berfungsi sebagai Content Management System (CMS) utama. Dibangun dengan Laravel 10 dan Filament 3, project ini menyediakan interface admin untuk manajemen konten, scheduling, dan monitoring.
+</p>
+
+<div class="box info">
+    <h4>📦 Lokasi Project</h4>
+    <code>/home/ubuntu/kiosk/cosmic-media-streaming-dpr</code>
+</div>
+
+<h2>3.2. Stack Teknologi</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Kategori</th>
+            <th>Teknologi</th>
+            <th>Versi</th>
+            <th>Fungsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Backend Framework</strong></td>
+            <td>Laravel</td>
+            <td>10.x</td>
+            <td>Core PHP framework</td>
+        </tr>
+        <tr>
+            <td><strong>Admin Panel</strong></td>
+            <td>Filament</td>
+            <td>3.0</td>
+            <td>Admin interface builder</td>
+        </tr>
+        <tr>
+            <td><strong>Frontend Framework</strong></td>
+            <td>Livewire</td>
+            <td>3.0</td>
+            <td>Reactive components</td>
+        </tr>
+        <tr>
+            <td><strong>Database</strong></td>
+            <td>MySQL / MariaDB</td>
+            <td>5.7+ / 10.x</td>
+            <td>Primary database</td>
+        </tr>
+        <tr>
+            <td><strong>Cache & Queue</strong></td>
+            <td>Redis</td>
+            <td>6.x+</td>
+            <td>Caching & job queue</td>
+        </tr>
+        <tr>
+            <td><strong>Real-time</strong></td>
+            <td>Pusher</td>
+            <td>7.2</td>
+            <td>WebSocket broadcasting</td>
+        </tr>
+        <tr>
+            <td><strong>Storage</strong></td>
+            <td>AWS S3 / Local</td>
+            <td>-</td>
+            <td>Media file storage</td>
+        </tr>
+        <tr>
+            <td><strong>Video Processing</strong></td>
+            <td>FFmpeg</td>
+            <td>-</td>
+            <td>Video transcoding & thumbnails</td>
+        </tr>
+        <tr>
+            <td><strong>PDF Generation</strong></td>
+            <td>DomPDF / Snappy</td>
+            <td>-</td>
+            <td>Server-side PDF export</td>
+        </tr>
+        <tr>
+            <td><strong>Authentication</strong></td>
+            <td>Laravel Sanctum</td>
+            <td>3.2</td>
+            <td>API token authentication</td>
+        </tr>
+        <tr>
+            <td><strong>Permissions</strong></td>
+            <td>Spatie Permissions</td>
+            <td>-</td>
+            <td>Role-based access control</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>3.3. Struktur Direktori</h2>
+
+<pre><code>cosmic-media-streaming-dpr/
+├── app/
+│   ├── Console/         # Artisan commands
+│   ├── Events/          # Event classes
+│   ├── Filament/        # Filament admin resources
+│   │   ├── Resources/   # CRUD resources
+│   │   ├── Pages/       # Custom pages
+│   │   └── Widgets/     # Dashboard widgets
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── API/     # API controllers
+│   │   │   └── ...      # Web controllers
+│   │   └── Middleware/
+│   ├── Jobs/            # Queue jobs
+│   │   └── RefreshDisplayJob.php
+│   ├── Models/          # Eloquent models
+│   ├── Repositories/    # Data repositories
+│   └── Services/        # Business logic services
+├── config/              # Configuration files
+├── database/
+│   ├── migrations/      # Database migrations
+│   └── seeders/         # Data seeders
+├── public/              # Public assets
+│   ├── cms/             # CMS assets
+│   └── content/         # User content
+├── resources/
+│   ├── views/           # Blade templates
+│   ├── css/             # CSS files
+│   └── js/              # JavaScript files
+├── routes/
+│   ├── api.php          # API routes
+│   ├── web.php          # Web routes
+│   └── channels.php     # Broadcast channels
+├── storage/             # Storage directory
+│   ├── app/             # Application files
+│   └── logs/            # Application logs
+├── docker-compose.yml   # Docker configuration
+├── Dockerfile           # Docker image
+└── .env                 # Environment variables
+</code></pre>
+
+<h2>3.4. API Endpoints</h2>
+
+<h3>3.4.1. Device Management</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Deskripsi</th>
+            <th>Auth</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/new_connection_device</code></td>
+            <td>Register device baru atau update status</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/api/ping</code></td>
+            <td>Health check endpoint (minimal response)</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/api/network-test</code></td>
+            <td>Network speed test (10KB payload)</td>
+            <td>❌</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>3.4.2. Layout Management</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Deskripsi</th>
+            <th>Auth</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/api/load_data/{id}</code></td>
+            <td>Load layout configuration & media</td>
+            <td>❌</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/save_change/{id}</code></td>
+            <td>Save layout changes (admin only)</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/spots/create/{id}</code></td>
+            <td>Add media spot to layout</td>
+            <td>✅</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-danger">DELETE</span></td>
+            <td><code>/api/spots/delete/{id}</code></td>
+            <td>Remove media spot from layout</td>
+            <td>✅</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>3.4.3. Media Management</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Deskripsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/media_image/create</code></td>
+            <td>Upload image media</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/media_video/create</code></td>
+            <td>Upload video media (chunked)</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/media_html/create</code></td>
+            <td>Create HTML content</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/media_hls/create</code></td>
+            <td>Create HLS stream reference</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/media_live_url/create</code></td>
+            <td>Create live URL content</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/api/video/{filename}</code></td>
+            <td>Stream video file</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/api/image/{filename}</code></td>
+            <td>Serve image file</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>3.4.4. Display Refresh</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Deskripsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/refreshDisplaysByVideo</code></td>
+            <td>Trigger refresh untuk displays yang menggunakan video tertentu</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-success">POST</span></td>
+            <td><code>/api/refreshDisplaysByLiveUrl</code></td>
+            <td>Trigger refresh untuk displays yang menggunakan live URL tertentu</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>3.4.5. Charts & Analytics</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Deskripsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/api/chart</code></td>
+            <td>Get device status statistics</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>3.5. Fitur Utama</h2>
+
+<h3>3.5.1. Display Management</h3>
+<div class="box success">
+    <h4>Fitur Display</h4>
+    <ul>
+        <li><strong>Multi-display Support:</strong> Kelola multiple kiosk dari satu dashboard</li>
+        <li><strong>Display Groups:</strong> Organisasi display berdasarkan lokasi/kategori</li>
+        <li><strong>Status Monitoring:</strong> Real-time connection status</li>
+        <li><strong>Remote Control:</strong> Restart, reload, update display dari admin panel</li>
+        <li><strong>Display Scheduling:</strong> Assign schedule berbeda per display</li>
+    </ul>
+</div>
+
+<h3>3.5.2. Layout Builder</h3>
+<div class="box info">
+    <h4>GridStack Layout System</h4>
+    <ul>
+        <li><strong>Drag & Drop Interface:</strong> Visual layout editor dengan GridStack.js</li>
+        <li><strong>Responsive Grid:</strong> 12-column grid system dengan auto-positioning</li>
+        <li><strong>Widget System:</strong> Reusable media widgets (video, image, HTML, QR, etc.)</li>
+        <li><strong>Preview Mode:</strong> Preview layout sebelum publish</li>
+        <li><strong>Template System:</strong> Save & reuse layout templates</li>
+    </ul>
+</div>
+
+<h3>3.5.3. Media Library</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Tipe Media</th>
+            <th>Format Support</th>
+            <th>Features</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Video</strong></td>
+            <td>MP4, AVI, MOV, WebM</td>
+            <td>Thumbnail generation, chunked upload, FFmpeg transcoding</td>
+        </tr>
+        <tr>
+            <td><strong>Image</strong></td>
+            <td>JPG, PNG, GIF, WebP</td>
+            <td>Auto-optimization, responsive sizing, lazy loading</td>
+        </tr>
+        <tr>
+            <td><strong>HLS Stream</strong></td>
+            <td>M3U8</td>
+            <td>Adaptive bitrate streaming, live TV support</td>
+        </tr>
+        <tr>
+            <td><strong>HTML</strong></td>
+            <td>HTML5</td>
+            <td>Custom HTML/CSS/JS, iframe support, dynamic content</td>
+        </tr>
+        <tr>
+            <td><strong>Live URL</strong></td>
+            <td>Any URL</td>
+            <td>External website embedding, auto-refresh</td>
+        </tr>
+        <tr>
+            <td><strong>QR Code</strong></td>
+            <td>Generated</td>
+            <td>Dynamic QR code generation, custom data</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>3.5.4. Scheduling System</h3>
+<pre><code>Schedule Structure:
+┌──────────────┐
+│   Schedule   │
+├──────────────┤
+│ • name       │
+│ • start_time │ ─┐
+│ • end_time   │  │  Active Period
+│ • is_active  │ ─┘
+└──────────────┘
+       │
+       │ has many
+       ▼
+┌──────────────┐
+│   Playlist   │
+├──────────────┤
+│ • name       │
+│ • duration   │
+│ • order      │
+└──────────────┘
+       │
+       │ has many
+       ▼
+┌──────────────┐
+│    Layout    │
+├──────────────┤
+│ • name       │
+│ • grid_data  │
+│ • duration   │
+└──────────────┘
+</code></pre>
+
+<h3>3.5.5. Real-time Communication</h3>
+<div class="box warning">
+    <h4>⚡ Pusher WebSocket Integration</h4>
+    <p><strong>Channel:</strong> <code>display-refresh</code></p>
+    <p><strong>Event:</strong> <code>DisplayRefreshed</code></p>
+    
+    <p><strong>Trigger Flow:</strong></p>
+    <ol>
+        <li>Admin update content/layout di backend</li>
+        <li>Laravel trigger <code>DisplayRefreshed</code> event</li>
+        <li>Pusher broadcast ke channel <code>display-refresh</code></li>
+        <li>Android APK subscribe & listen to channel</li>
+        <li>APK receive event → trigger <code>location.reload()</code></li>
+    </ol>
+    
+    <p><strong>Payload Example:</strong></p>
+    <pre><code>{
+  "display_id": 123,
+  "message": "Display content updated",
+  "timestamp": "2026-01-21T10:30:00Z",
+  "action": "reload"
+}</code></pre>
+</div>
+
+<h3>3.5.6. Performance Optimizations (Jan 2026)</h3>
+<div class="box success">
+    <h4>✅ Recent Performance Improvements</h4>
+    <ul>
+        <li><strong>Redis Caching:</strong>
+            <ul>
+                <li>Layout data cached 60 minutes</li>
+                <li>Media metadata cached 30 minutes</li>
+                <li>Display configuration cached 15 minutes</li>
+                <li>Cache invalidation on content update</li>
+            </ul>
+        </li>
+        <li><strong>Queue-based Processing:</strong>
+            <ul>
+                <li><code>RefreshDisplayJob</code> untuk async display updates</li>
+                <li>Retry mechanism (3 attempts, exponential backoff)</li>
+                <li>Failed jobs logging & monitoring</li>
+            </ul>
+        </li>
+        <li><strong>Database Optimizations:</strong>
+            <ul>
+                <li>Eager loading relationships (reduced 100+ queries → ~10)</li>
+                <li>Index optimization pada foreign keys</li>
+                <li>Query result caching</li>
+            </ul>
+        </li>
+        <li><strong>Environment Variables:</strong>
+            <ul>
+                <li>Removed hardcoded IPs (192.168.x.x)</li>
+                <li>All URLs configurable via .env</li>
+                <li>Multi-environment support (dev, staging, prod)</li>
+            </ul>
+        </li>
+    </ul>
+    
+    <p><strong>Impact:</strong></p>
+    <ul>
+        <li>Display load time: <strong>80% faster</strong> (3-5s → 0.5-1s)</li>
+        <li>Database queries: <strong>90% reduction</strong></li>
+        <li>Cache hit rate: <strong>~95%</strong></li>
+        <li>API response time: <strong>200-500ms</strong> (from ~2-3s)</li>
+    </ul>
+</div>
+
+<h2>3.6. Environment Configuration</h2>
+
+<h3>Key Environment Variables</h3>
+<pre><code># Application
+APP_NAME="Cosmic Media Streaming"
+APP_ENV=production
+APP_URL=http://your-domain.com
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=cosmic_media_streaming
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+# Queue
+QUEUE_CONNECTION=redis
+
+# Pusher WebSocket
+PUSHER_APP_ID=your_app_id
+PUSHER_APP_KEY=your_app_key
+PUSHER_APP_SECRET=your_app_secret
+PUSHER_HOST=your-pusher-host.com
+PUSHER_PORT=443
+PUSHER_SCHEME=https
+PUSHER_APP_CLUSTER=mt1
+
+# Storage (S3 or Local)
+FILESYSTEM_DISK=s3
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+AWS_DEFAULT_REGION=ap-southeast-1
+AWS_BUCKET=your_bucket
+AWS_ENDPOINT=your_endpoint
+
+# External Services
+SERVICE_GENERATE_PDF=http://localhost:3333
+SERVICE_REMOTE_DEVICE=http://localhost:3001
+</code></pre>
+
+<!-- CHAPTER 4 -->
+<h1>4. GENERATE-PDF (PDF Generation Service)</h1>
+
+<h2>4.1. Deskripsi Project</h2>
+<p>
+    <strong>generate-pdf</strong> adalah microservice berbasis Node.js yang bertanggung jawab untuk:
+</p>
+<ul>
+    <li>Generating PDF reports dari web pages</li>
+    <li>Custom layout builder (drag & drop interface)</li>
+    <li>Real-time data visualization (charts & graphs)</li>
+    <li>Server-Sent Events (SSE) untuk monitoring real-time</li>
+</ul>
+
+<div class="box info">
+    <h4>📦 Lokasi Project</h4>
+    <code>/home/ubuntu/kiosk/generate-pdf</code>
+</div>
+
+<h2>4.2. Stack Teknologi</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Teknologi</th>
+            <th>Versi</th>
+            <th>Fungsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Node.js</strong></td>
+            <td>18.x+</td>
+            <td>Runtime environment</td>
+        </tr>
+        <tr>
+            <td><strong>Express.js</strong></td>
+            <td>4.21.1</td>
+            <td>Web framework</td>
+        </tr>
+        <tr>
+            <td><strong>Puppeteer</strong></td>
+            <td>23.7.0</td>
+            <td>Headless Chrome automation</td>
+        </tr>
+        <tr>
+            <td><strong>MySQL2</strong></td>
+            <td>3.11.5</td>
+            <td>Database driver (direct connection)</td>
+        </tr>
+        <tr>
+            <td><strong>GridStack.js</strong></td>
+            <td>11.1.2</td>
+            <td>Drag & drop layout builder</td>
+        </tr>
+        <tr>
+            <td><strong>WebSocket (ws)</strong></td>
+            <td>8.18.0</td>
+            <td>Real-time communication</td>
+        </tr>
+        <tr>
+            <td><strong>Axios</strong></td>
+            <td>1.7.9</td>
+            <td>HTTP client</td>
+        </tr>
+        <tr>
+            <td><strong>Multer</strong></td>
+            <td>1.4.5</td>
+            <td>File upload handling</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>4.3. API Endpoints</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Port</th>
+            <th>Deskripsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/generate-pdf</code></td>
+            <td>3333</td>
+            <td>Generate PDF from URL<br><code>?url=https://...</code></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/view-pdf</code></td>
+            <td>3333</td>
+            <td>Render PDF preview page</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/data_table</code></td>
+            <td>3333</td>
+            <td>Get device status & media playlist data</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/custom-layout</code></td>
+            <td>3333</td>
+            <td>Custom layout builder<br><code>?id=123</code></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/status_device</code></td>
+            <td>3334</td>
+            <td>SSE stream for real-time device status</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>4.4. Fitur Utama</h2>
+
+<h3>4.4.1. PDF Generation dengan Puppeteer</h3>
+<div class="box success">
+    <h4>🎨 Puppeteer Configuration</h4>
+    <pre><code>const browser = await puppeteer.launch({
+    headless: true,
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-dev-shm-usage'
+    ]
+});
+
+const page = await browser.newPage();
+await page.goto(urlToLoad, { 
+    waitUntil: 'networkidle0',  // Wait for all requests
+    timeout: 60000 
+});
+
+await page.pdf({ 
+    path: filePath, 
+    format: 'A4', 
+    printBackground: true 
+});
+</code></pre>
+</div>
+
+<h3>4.4.2. Custom Layout Builder</h3>
+<p>
+    Service ini menyediakan interface visual untuk membuat custom layout menggunakan GridStack.js:
+</p>
+<ul>
+    <li><strong>Drag & Drop Widgets:</strong> Media widgets dapat di-drag ke grid</li>
+    <li><strong>Resize & Reposition:</strong> Widget size & position adjustable</li>
+    <li><strong>Live Preview:</strong> Real-time preview saat editing</li>
+    <li><strong>Save Configuration:</strong> Layout disimpan sebagai JSON di database</li>
+</ul>
+
+<h3>4.4.3. Real-time Data Visualization</h3>
+<pre><code>// Data fetching untuk charts
+app.get('/data_table', async (req, res) => {
+    const [status_device] = await pool.query(
+        "SELECT id, name, status FROM remotes WHERE deleted_at IS NULL"
+    );
+    
+    const [media_playlist] = await pool.query(`
+        SELECT 
+            d.name, 
+            s.name as schedule_name,
+            p.name as playlist_name,
+            p.id AS playlist_id, 
+            COUNT(pl.id) AS total
+        FROM displays d
+        INNER JOIN schedules s ON s.id = d.schedule_id
+        INNER JOIN schedule_playlists sp ON sp.schedule_id = s.id
+        INNER JOIN playlists p ON p.id = sp.playlist_id
+        INNER JOIN playlist_layouts pl ON pl.playlist_id = p.id
+        WHERE d.deleted_at IS NULL
+        GROUP BY d.name, p.id
+    `);
+    
+    res.json({
+        status_device: status_device,
+        media_playlist: media_playlist
+    });
+});
+</code></pre>
+
+<h3>4.4.4. Server-Sent Events (SSE)</h3>
+<div class="box info">
+    <h4>📡 Real-time Device Monitoring (Port 3334)</h4>
+    <p>
+        Service <code>server-ws.js</code> menyediakan SSE endpoint untuk streaming device status secara real-time:
+    </p>
+    <pre><code>// SSE endpoint
+app.get("/status_device", async (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    
+    const interval = setInterval(async () => {
+        // Query devices
+        const [rows] = await pool.query(`
+            SELECT id, name, url FROM remotes 
+            WHERE deleted_at IS NULL
+        `);
+        
+        // Check status & update
+        for (const row of rows) {
+            const status = await fetchDeviceStatus(row.url);
+            await pool.query(
+                "UPDATE remotes SET status = ? WHERE id = ?",
+                [status, row.id]
+            );
+            
+            // Stream to client
+            res.write(`data: ${JSON.stringify({
+                id: row.id,
+                name: row.name,
+                status: status
+            })}\n\n`);
+        }
+    }, 3000);
+    
+    req.on('close', () => clearInterval(interval));
+});
+</code></pre>
+</div>
+
+<h2>4.5. Integrasi dengan Core System</h2>
+
+<div class="flow-diagram">
+Laravel Backend                     Generate-PDF Service
+      │                                    │
+      │ 1. User Request Export             │
+      │                                    │
+      ├────────────────────────────────────▶
+      │   POST /api/export-report          │
+      │   {                                │
+      │     "type": "device-status",       │
+      │     "format": "pdf",               │
+      │     "filters": {...}               │
+      │   }                                │
+      │                                    │
+      │                                    │ 2. Generate Report URL
+      │                                    │    with auth token
+      │                                    │
+      │ 3. Call PDF Service                │
+      │────────────────────────────────────▶
+      │   GET /generate-pdf                │
+      │   ?url=http://cms.com/reports/1    │
+      │        ?token=abc123               │
+      │                                    │
+      │                                    │ 4. Launch Puppeteer
+      │                                    │ 5. Load Report URL
+      │                                    │ 6. Fetch Data from DB
+      │                                    │ 7. Render Charts
+      │                                    │ 8. Generate PDF
+      │                                    │
+      │ 9. Return PDF File                 │
+      │◀────────────────────────────────────
+      │   Content-Type: application/pdf    │
+      │                                    │
+      │ 10. Send to User                   │
+      │                                    │
+</div>
+
+<h2>4.6. Database Configuration</h2>
+
+<pre><code>// database.js
+const mysql = require('mysql2/promise');
+
+const pool = mysql.createPool({
+    host: process.env.DB_HOST || '127.0.0.1',
+    user: process.env.DB_USER || 'platform_user',
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'platform',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+module.exports = pool;
+</code></pre>
+
+<!-- CHAPTER 5 -->
+<h1>5. REMOTE-ANDROID-DEVICE (Device Management)</h1>
+
+<h2>5.1. Deskripsi Project</h2>
+<p>
+    <strong>remote-android-device</strong> adalah microservice berbasis FastAPI (Python) yang bertanggung jawab untuk:
+</p>
+<ul>
+    <li>Monitoring koneksi status perangkat Android secara real-time</li>
+    <li>Health check paralel untuk multiple devices</li>
+    <li>Aggregating device analytics & statistics</li>
+    <li>Streaming device status via Server-Sent Events</li>
+</ul>
+
+<div class="box info">
+    <h4>📦 Lokasi Project</h4>
+    <code>/home/ubuntu/kiosk/remote-android-device</code>
+</div>
+
+<h2>5.2. Stack Teknologi</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Teknologi</th>
+            <th>Versi</th>
+            <th>Fungsi</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Python</strong></td>
+            <td>3.9+</td>
+            <td>Programming language</td>
+        </tr>
+        <tr>
+            <td><strong>FastAPI</strong></td>
+            <td>0.112.2</td>
+            <td>Modern async web framework</td>
+        </tr>
+        <tr>
+            <td><strong>PyMySQL</strong></td>
+            <td>-</td>
+            <td>MySQL database driver</td>
+        </tr>
+        <tr>
+            <td><strong>Uvicorn</strong></td>
+            <td>-</td>
+            <td>ASGI server</td>
+        </tr>
+        <tr>
+            <td><strong>Requests</strong></td>
+            <td>-</td>
+            <td>HTTP client library</td>
+        </tr>
+        <tr>
+            <td><strong>APScheduler</strong></td>
+            <td>3.10.4</td>
+            <td>Background job scheduling</td>
+        </tr>
+        <tr>
+            <td><strong>ADB Shell</strong></td>
+            <td>0.4.4</td>
+            <td>Android Debug Bridge interface</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>5.3. API Endpoints</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Deskripsi</th>
+            <th>Response Type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/graph_playlist</code></td>
+            <td>Get playlist distribution graph data</td>
+            <td>JSON</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/status_service</code></td>
+            <td>Get connected vs disconnected device count</td>
+            <td>JSON</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">GET</span></td>
+            <td><code>/status_device</code></td>
+            <td>Real-time device status stream</td>
+            <td>SSE Stream</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>5.4. Fitur Utama</h2>
+
+<h3>5.4.1. Parallel Device Health Check</h3>
+<div class="box success">
+    <h4>⚡ ThreadPoolExecutor untuk Parallel Processing</h4>
+    <pre><code>executor = ThreadPoolExecutor(max_workers=20)
+
+def fetch_device_status(url: str) -> str:
+    try:
+        response = requests.get(url, timeout=5)
+        return "Connected" if response.status_code == 200 else "Disconnected"
+    except requests.RequestException:
+        return "Disconnected"
+
+# Parallel execution
+futures = {
+    executor.submit(fetch_device_status, device["url"]): device
+    for device in devices
+}
+
+for future in as_completed(futures):
+    device = futures[future]
+    status = future.result()
+    # Update database
+    update_device_status(device["id"], status)
+</code></pre>
+    <p><strong>Performance:</strong> 100 devices checked dalam ~5 detik (paralel) vs ~500 detik (sequential)</p>
+</div>
+
+<h3>5.4.2. Real-time Status Streaming</h3>
+<div class="box info">
+    <h4>📡 Server-Sent Events Implementation</h4>
+    <pre><code>@app.get("/status_device")
+async def status_device():
+    """Stream real-time device status updates"""
+    return StreamingResponse(
+        status_stream(), 
+        media_type="text/event-stream"
+    )
+
+def status_stream():
+    """Generate continuous status updates"""
+    while True:
+        connection = get_db_connection()
+        
+        # Fetch all devices
+        devices = fetch_devices_from_db(connection)
+        
+        # Check status in parallel
+        futures = {
+            executor.submit(fetch_device_status, device["url"]): device
+            for device in devices
+        }
+        
+        # Stream results as they complete
+        for future in as_completed(futures):
+            device = futures[future]
+            status = future.result()
+            
+            # Update database
+            update_device_status(device["id"], status)
+            
+            # Stream to client
+            yield f'data: {json.dumps({
+                "id": device["id"],
+                "name": device["name"],
+                "status": status,
+                "timestamp": datetime.now().isoformat()
+            })}\n\n'
+        
+        time.sleep(3)  # Check every 3 seconds
+</code></pre>
+</div>
+
+<h3>5.4.3. Device Analytics</h3>
+<pre><code>@app.get("/graph_playlist")
+async def graph_playlist():
+    """
+    Generate playlist distribution analytics
+    Returns data for chart visualization
+    """
+    connection = get_db_connection()
+    
+    cursor.execute("""
+        SELECT 
+            d.name, 
+            p.id AS playlist_id, 
+            COUNT(pl.id) AS total
+        FROM displays d
+        INNER JOIN schedules s ON s.id = d.schedule_id
+        INNER JOIN schedule_playlists sp ON sp.schedule_id = s.id
+        INNER JOIN playlists p ON p.id = sp.playlist_id
+        INNER JOIN playlist_layouts pl ON pl.playlist_id = p.id
+        WHERE d.deleted_at IS NULL 
+        GROUP BY d.name, p.id
+    """)
+    
+    data = cursor.fetchall()
+    
+    return {
+        "names": [row["name"] for row in data],
+        "totals": [row["total"] for row in data]
+    }
+</code></pre>
+
+<h3>5.4.4. Service Status Aggregation</h3>
+<pre><code>@app.get("/status_service")
+async def status_service():
+    """
+    Get aggregated device status statistics
+    """
+    connection = get_db_connection()
+    
+    cursor.execute(
+        "SELECT status FROM remotes WHERE deleted_at IS NULL"
+    )
+    devices = cursor.fetchall()
+    
+    total_connected = sum(
+        1 for d in devices if d["status"] == "Connected"
+    )
+    total_disconnected = sum(
+        1 for d in devices if d["status"] == "Disconnected"
+    )
+    
+    return {
+        "status": 200,
+        "connect": total_connected,
+        "disconnect": total_disconnected,
+        "total": len(devices),
+        "uptime_percentage": (
+            total_connected / len(devices) * 100 
+            if devices else 0
+        )
+    }
+</code></pre>
+
+<h2>5.5. Database Configuration</h2>
+
+<pre><code># app.py
+DB_HOST = "127.0.0.1"
+DB_PORT = 3306
+DB_USER = "platform_user"
+DB_PASSWORD = "SorryThisIsSuperSecret!!!_DPR"
+DB_NAME = "platform"
+
+def get_db_connection():
+    """Create new database connection per request"""
+    try:
+        connection = pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor,
+        )
+        return connection
+    except pymysql.MySQLError as e:
+        logger.error(f"Database connection error: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Database connection failed"
+        )
+</code></pre>
+
+<h2>5.6. Server Configuration</h2>
+
+<pre><code>if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "app:app",
+        host="0.0.0.0",      # Listen on all interfaces
+        port=3001,           # Service port
+        reload=True,         # Auto-reload on code changes
+        workers=10           # Multiple worker processes
+    )
+</code></pre>
+
+<h2>5.7. Integrasi dengan Core System</h2>
+
+<div class="mermaid">
+sequenceDiagram
+    participant Admin as Admin Dashboard
+    participant Service as Remote-Android Service
+    participant DB as Database
+    participant Device1 as Device 1
+    participant Device2 as Device 2
+    participant Device3 as Device 3
+    
+    Note over Admin,DB: Real-time Device Monitoring Flow
+    
+    Admin->>Admin: 1. Load Device Monitor Page
+    
+    Admin->>Service: 2. Subscribe to SSE Stream<br/>GET /status_device
+    activate Service
+    
+    Service->>DB: 3. Query Device List<br/>SELECT * FROM remotes
+    activate DB
+    DB-->>Service: [device1, device2, device3, ...]
+    deactivate DB
+    
+    Note over Service,Device3: 4. Parallel Health Check (20 workers)
+    
+    par Check Device 1
+        Service->>Device1: GET http://device1/ping
+        Device1-->>Service: HTTP 200 OK
+    and Check Device 2
+        Service->>Device2: GET http://device2/ping
+        Device2-->>Service: HTTP 200 OK
+    and Check Device 3
+        Service->>Device3: GET http://device3/ping
+        Device3-->>Service: Timeout/Error
+    end
+    
+    Service->>DB: 5. Update Status<br/>UPDATE remotes<br/>SET status = 'Connected/Disconnected'
+    activate DB
+    DB-->>Service: OK
+    deactivate DB
+    
+    Service-->>Admin: 6. Stream Status Updates (SSE)<br/>data: {"id": 1, "status": "Connected"}<br/>data: {"id": 2, "status": "Connected"}<br/>data: {"id": 3, "status": "Disconnected"}
+    
+    Admin->>Admin: 7. Update UI (Real-time)<br/>✅ Green badge for Connected<br/>❌ Red badge for Disconnected
+    
+    deactivate Service
+    
+    Note over Admin,Device3: Loop every 3 seconds
+    
+    loop Every 3 seconds
+        Service->>DB: Query Device List
+        DB-->>Service: Device data
+        Service->>Device1: Health Check
+        Service->>Device2: Health Check
+        Service->>Device3: Health Check
+        Service->>DB: Update Status
+        Service-->>Admin: Stream Updates
+    end
+</div>
+
+<div class="box info">
+    <h4>📡 Integration Details:</h4>
+    <ul>
+        <li><strong>SSE (Server-Sent Events):</strong> Real-time unidirectional stream from server to client</li>
+        <li><strong>Parallel Processing:</strong> 20 concurrent workers using ThreadPoolExecutor</li>
+        <li><strong>Health Check Interval:</strong> 3 seconds per cycle</li>
+        <li><strong>Status Values:</strong> 'Connected', 'Disconnected', 'Unknown'</li>
+        <li><strong>Response Format:</strong> JSON with device_id, name, ip, status, last_seen</li>
+        <li><strong>Error Handling:</strong> Timeout after 5 seconds, mark as Disconnected</li>
+    </ul>
+</div>
+
+<!-- CHAPTER 6 -->
+<h1>6. INTEGRASI DENGAN APK ANDROID</h1>
+
+<h2>6.1. Arsitektur Komunikasi</h2>
+
+<div class="architecture-box">
+    <h3>Android APK Architecture</h3>
+    <div class="flow-diagram">
+┌────────────────────────────────────────────────────────────────┐
+│                     ANDROID APK (Kiosk Mode)                   │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │              Main Activity (Kiosk Controller)            │ │
+│  └───────────────────────┬──────────────────────────────────┘ │
+│                          │                                     │
+│         ┌────────────────┼────────────────┐                   │
+│         │                │                │                   │
+│  ┌──────▼──────┐  ┌──────▼──────┐  ┌──────▼──────┐          │
+│  │   WebView   │  │   Pusher    │  │  API Client │          │
+│  │   Engine    │  │   Client    │  │   (HTTP)    │          │
+│  │             │  │             │  │             │          │
+│  │ • HTML/CSS  │  │ • Subscribe │  │ • Fetch     │          │
+│  │ • JavaScript│  │ • Listen    │  │   Layout    │          │
+│  │ • Video     │  │ • Reconnect │  │ • Download  │          │
+│  │ • HLS       │  │             │  │   Media     │          │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
+│         │                │                │                   │
+│  ┌──────▼────────────────▼────────────────▼──────┐           │
+│  │           Content Cache Manager                │           │
+│  │                                                 │           │
+│  │  • SQLite local database                       │           │
+│  │  • Media file cache                            │           │
+│  │  • Layout configuration cache                  │           │
+│  │  • Offline playback support                    │           │
+│  └─────────────────────────────────────────────────┘          │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+</div>
+</div>
+
+<h2>6.2. Protocol & Format Data</h2>
+
+<h3>6.2.1. Device Registration</h3>
+<div class="box info">
+    <h4>📱 Initial Connection Flow</h4>
+    <p><strong>Endpoint:</strong> <code>POST /api/new_connection_device</code></p>
+    
+    <p><strong>Request (dari APK):</strong></p>
+    <pre><code>{
+    "device_name": "Kiosk-Floor-1-A",
+    "device_ip": "192.168.1.100",
+    "android_version": "12",
+    "app_version": "2.1.0",
+    "screen_resolution": "1920x1080",
+    "mac_address": "AA:BB:CC:DD:EE:FF"
+}</code></pre>
+    
+    <p><strong>Response:</strong></p>
+    <pre><code>{
+    "status": "success",
+    "device_id": 123,
+    "display_id": 456,
+    "message": "Device registered successfully"
+}</code></pre>
+</div>
+
+<h3>6.2.2. Layout Loading</h3>
+<div class="box success">
+    <h4>🎨 Layout Configuration API</h4>
+    <p><strong>Endpoint:</strong> <code>GET /api/load_data/{display_id}</code></p>
+    
+    <p><strong>Response Structure:</strong></p>
+    <pre><code>{
+    "display": {
+        "id": 456,
+        "name": "Kiosk Floor 1 - A",
+        "schedule_id": 789
+    },
+    "current_playlist": {
+        "id": 101,
+        "name": "Morning Content",
+        "duration": 300
+    },
+    "layouts": [
+        {
+            "id": 201,
+            "name": "Layout 1",
+            "duration": 60,
+            "grid_data": {
+                "cols": 12,
+                "rows": 8,
+                "widgets": [
+                    {
+                        "id": "widget-1",
+                        "x": 0,
+                        "y": 0,
+                        "w": 6,
+                        "h": 4,
+                        "type": "video",
+                        "media_id": 301,
+                        "content": {
+                            "url": "http://cdn.com/videos/promo.mp4",
+                            "duration": 30,
+                            "loop": true
+                        }
+                    },
+                    {
+                        "id": "widget-2",
+                        "x": 6,
+                        "y": 0,
+                        "w": 6,
+                        "h": 4,
+                        "type": "image",
+                        "media_id": 302,
+                        "content": {
+                            "url": "http://cdn.com/images/banner.jpg",
+                            "duration": 10,
+                            "transition": "fade"
+                        }
+                    },
+                    {
+                        "id": "widget-3",
+                        "x": 0,
+                        "y": 4,
+                        "w": 12,
+                        "h": 4,
+                        "type": "html",
+                        "media_id": 303,
+                        "content": {
+                            "html": "&lt;div class='ticker'&gt;...&lt;/div&gt;",
+                            "css": ".ticker { ... }",
+                            "js": "// Animation code"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "schedule": {
+        "active_times": [
+            {
+                "start": "08:00:00",
+                "end": "18:00:00",
+                "playlist_id": 101
+            },
+            {
+                "start": "18:00:00",
+                "end": "23:59:59",
+                "playlist_id": 102
+            }
+        ]
+    }
+}</code></pre>
+</div>
+
+<h3>6.2.3. Real-time Update via Pusher</h3>
+<div class="box warning">
+    <h4>⚡ WebSocket Event Handling</h4>
+    
+    <p><strong>APK Subscribe to Channel:</strong></p>
+    <pre><code>// JavaScript dalam WebView
+const pusher = new Pusher('YOUR_PUSHER_KEY', {
+    cluster: 'mt1',
+    encrypted: true
+});
+
+const channel = pusher.subscribe('display-refresh');
+
+channel.bind('DisplayRefreshed', function(data) {
+    console.log('Received update:', data);
+    
+    if (data.display_id === currentDisplayId) {
+        // Reload content
+        location.reload();
+        
+        // Or fetch new data
+        fetchLatestLayout(data.display_id);
+    }
+});
+</code></pre>
+    
+    <p><strong>Backend Trigger Event:</strong></p>
+    <pre><code>// Laravel - DisplayRefreshed Event
+use App\Events\DisplayRefreshed;
+
+// Trigger event
+event(new DisplayRefreshed([
+    'display_id' => $display->id,
+    'message' => 'Content updated',
+    'timestamp' => now()->toIso8601String(),
+    'action' => 'reload'
+]));</code></pre>
+</div>
+
+<h3>6.2.4. Media Streaming</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Media Type</th>
+            <th>Endpoint</th>
+            <th>Protocol</th>
+            <th>Caching</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Video</strong></td>
+            <td><code>/api/video/{filename}</code></td>
+            <td>HTTP Range Requests</td>
+            <td>✅ Local cache</td>
+        </tr>
+        <tr>
+            <td><strong>Image</strong></td>
+            <td><code>/api/image/{filename}</code></td>
+            <td>HTTP</td>
+            <td>✅ Local cache</td>
+        </tr>
+        <tr>
+            <td><strong>HLS Stream</strong></td>
+            <td>External M3U8 URL</td>
+            <td>HLS Protocol</td>
+            <td>❌ Live stream</td>
+        </tr>
+        <tr>
+            <td><strong>HTML Content</strong></td>
+            <td>Embedded in layout JSON</td>
+            <td>Direct render</td>
+            <td>✅ In memory</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>6.3. Sequence Diagram - Complete Flow</h2>
+
+<div class="flow-diagram">
+┌────────┐   ┌──────────┐   ┌───────────┐   ┌──────────┐   ┌─────────┐
+│ Admin  │   │ Laravel  │   │  Pusher   │   │ Generate │   │ Android │
+│  User  │   │ Backend  │   │  Server   │   │   PDF    │   │   APK   │
+└───┬────┘   └────┬─────┘   └─────┬─────┘   └────┬─────┘   └────┬────┘
+    │             │                │               │              │
+    │             │                │               │              │
+    │ PHASE 1: DEVICE REGISTRATION & INITIAL LOAD                 │
+    │             │                │               │              │
+    │             │                │               │         ┌────▼────┐
+    │             │                │               │         │ APK     │
+    │             │                │               │         │ Starts  │
+    │             │                │               │         └────┬────┘
+    │             │                │               │              │
+    │             │◀───────────────────────────────────────────────┤
+    │             │  POST /api/new_connection_device              │
+    │             │  (device info)                                │
+    │             │                │               │              │
+    │             ├────────────────────────────────────────────────▶
+    │             │  Response: device_id, display_id              │
+    │             │                │               │              │
+    │             │◀───────────────────────────────────────────────┤
+    │             │  GET /api/load_data/{display_id}              │
+    │             │                │               │              │
+    │             ├────────────────────────────────────────────────▶
+    │             │  Response: layout + media + schedule          │
+    │             │                │               │              │
+    │             │                │               │         ┌────▼────┐
+    │             │                │               │         │ Download│
+    │             │                │               │         │ & Cache │
+    │             │                │               │         │ Media   │
+    │             │                │               │         └────┬────┘
+    │             │                │               │              │
+    │             │                │               │         ┌────▼────┐
+    │             │                │               │         │ Render  │
+    │             │                │               │         │ Display │
+    │             │                │               │         └────┬────┘
+    │             │                │               │              │
+    │             │                │          ┌────▼────────────────────┐
+    │             │                │          │ Subscribe to Pusher     │
+    │             │                │          │ Channel: display-refresh│
+    │             │                │          └─────────────────────────┘
+    │             │                │               │              │
+    │             │                │               │              │
+    │ PHASE 2: CONTENT UPDATE                      │              │
+    │             │                │               │              │
+    ├─────────────▶                │               │              │
+    │ Update      │                │               │              │
+    │ Content     │                │               │              │
+    └─────────────┘                │               │              │
+                  │                │               │              │
+             ┌────▼────┐           │               │              │
+             │ Save to │           │               │              │
+             │ Database│           │               │              │
+             └────┬────┘           │               │              │
+                  │                │               │              │
+             ┌────▼────────────┐   │               │              │
+             │ Invalidate      │   │               │              │
+             │ Redis Cache     │   │               │              │
+             └────┬────────────┘   │               │              │
+                  │                │               │              │
+             ┌────▼────────────┐   │               │              │
+             │ Dispatch        │   │               │              │
+             │ RefreshDisplayJob│  │               │              │
+             └────┬────────────┘   │               │              │
+                  │                │               │              │
+             ┌────▼────────────┐   │               │              │
+             │ Trigger Pusher  │   │               │              │
+             │ Event           │   │               │              │
+             └────┬────────────┘   │               │              │
+                  │                │               │              │
+                  ├────────────────▶               │              │
+                  │  Event:         │              │              │
+                  │  DisplayRefreshed│             │              │
+                  │                 │              │              │
+                  │                 ├──────────────┼──────────────▶
+                  │                 │  Broadcast   │              │
+                  │                 │              │         ┌────▼────┐
+                  │                 │              │         │ Receive │
+                  │                 │              │         │ Event   │
+                  │                 │              │         └────┬────┘
+                  │                 │              │              │
+                  │◀───────────────────────────────────────────────┤
+                  │  GET /api/load_data/{display_id}              │
+                  │  (fetch latest layout)                        │
+                  │                 │              │              │
+                  ├────────────────────────────────────────────────▶
+                  │  Response: updated layout                     │
+                  │                 │              │              │
+                  │                 │              │         ┌────▼────┐
+                  │                 │              │         │ Reload  │
+                  │                 │              │         │ Display │
+                  │                 │              │         └─────────┘
+                  │                 │              │              │
+                  │                 │              │              │
+    │ PHASE 3: REPORTING & PDF EXPORT              │              │
+    │             │                 │              │              │
+    ├─────────────▶                 │              │              │
+    │ Request     │                 │              │              │
+    │ PDF Report  │                 │              │              │
+    └─────────────┘                 │              │              │
+                  │                 │              │              │
+             ┌────▼────────────┐    │              │              │
+             │ Generate        │    │              │              │
+             │ Report URL      │    │              │              │
+             └────┬────────────┘    │              │              │
+                  │                 │              │              │
+                  ├──────────────────┼──────────────▶              │
+                  │  GET /generate-pdf              │              │
+                  │  ?url=...                       │              │
+                  │                 │         ┌─────▼─────┐        │
+                  │                 │         │ Launch    │        │
+                  │                 │         │ Puppeteer │        │
+                  │                 │         └─────┬─────┘        │
+                  │                 │               │              │
+                  │                 │         ┌─────▼─────┐        │
+                  │                 │         │ Load Page │        │
+                  │                 │         │ Render    │        │
+                  │                 │         └─────┬─────┘        │
+                  │                 │               │              │
+                  │                 │         ┌─────▼─────┐        │
+                  │                 │         │ Generate  │        │
+                  │                 │         │ PDF       │        │
+                  │                 │         └─────┬─────┘        │
+                  │                 │               │              │
+                  │◀──────────────────────────────────┤              │
+                  │  PDF File                       │              │
+    ┌─────────────┤                 │              │              │
+    │ Download    │                 │              │              │
+    │ PDF         │                 │              │              │
+    └─────────────┘                 │              │              │
+                  │                 │              │              │
+</div>
+
+<h2>6.4. APK Implementation Guidelines</h2>
+
+<h3>6.4.1. WebView Configuration</h3>
+<div class="box info">
+    <h4>🌐 WebView Setup (Android)</h4>
+    <pre><code>// MainActivity.java
+WebView webView = findViewById(R.id.webView);
+WebSettings webSettings = webView.getSettings();
+
+// Enable JavaScript
+webSettings.setJavaScriptEnabled(true);
+
+// Enable DOM Storage (untuk Pusher)
+webSettings.setDomStorageEnabled(true);
+
+// Enable Database (untuk offline cache)
+webSettings.setDatabaseEnabled(true);
+
+// Enable caching
+webSettings.setAppCacheEnabled(true);
+webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+// Enable video playback
+webSettings.setMediaPlaybackRequiresUserGesture(false);
+
+// Set WebChromeClient untuk video fullscreen
+webView.setWebChromeClient(new WebChromeClient() {
+    @Override
+    public void onShowCustomView(View view, CustomViewCallback callback) {
+        // Handle fullscreen video
+    }
+});
+
+// Load initial URL
+String displayId = getDeviceDisplayId();
+webView.loadUrl(
+    "http://your-domain.com/display/" + displayId
+);
+</code></pre>
+</div>
+
+<h3>6.4.2. Offline Support</h3>
+<pre><code>// Caching strategy
+if (isNetworkAvailable()) {
+    // Online: load from network, update cache
+    webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+} else {
+    // Offline: load from cache
+    webSettings.setCacheMode(WebSettings.LOAD_CACHE_ONLY);
+}
+
+// Service Worker untuk advanced caching
+// (di dalam WebView JavaScript)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+            console.log('SW registered');
+        });
+}
+</code></pre>
+
+<h3>6.4.3. Kiosk Mode Implementation</h3>
+<pre><code>// Kiosk mode setup
+public class KioskActivity extends AppCompatActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        // Hide system UI
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_FULLSCREEN |
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        );
+        
+        // Prevent status bar pull-down
+        getWindow().setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+        
+        // Keep screen on
+        getWindow().addFlags(
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        );
+    }
+    
+    // Disable back button
+    @Override
+    public void onBackPressed() {
+        // Do nothing
+    }
+    
+    // Re-lock on resume
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startLockTask();
+    }
+}
+</code></pre>
+
+<!-- CHAPTER 7 -->
+<h1>7. DEPLOYMENT & INFRASTRUCTURE</h1>
+
+<h2>7.1. System Requirements</h2>
+
+<h3>7.1.1. Backend Server (Laravel)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Minimum</th>
+            <th>Recommended</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>OS</strong></td>
+            <td>Ubuntu 20.04</td>
+            <td>Ubuntu 22.04 LTS</td>
+        </tr>
+        <tr>
+            <td><strong>CPU</strong></td>
+            <td>2 cores</td>
+            <td>4+ cores</td>
+        </tr>
+        <tr>
+            <td><strong>RAM</strong></td>
+            <td>4 GB</td>
+            <td>8+ GB</td>
+        </tr>
+        <tr>
+            <td><strong>Storage</strong></td>
+            <td>50 GB</td>
+            <td>100+ GB SSD</td>
+        </tr>
+        <tr>
+            <td><strong>PHP</strong></td>
+            <td>8.1</td>
+            <td>8.2+</td>
+        </tr>
+        <tr>
+            <td><strong>MySQL</strong></td>
+            <td>5.7</td>
+            <td>8.0+</td>
+        </tr>
+        <tr>
+            <td><strong>Redis</strong></td>
+            <td>6.0</td>
+            <td>7.0+</td>
+        </tr>
+        <tr>
+            <td><strong>Node.js</strong></td>
+            <td>16.x</td>
+            <td>18.x LTS</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>7.1.2. PDF Service Server</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Specification</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>OS</strong></td>
+            <td>Ubuntu 20.04+ atau Container</td>
+        </tr>
+        <tr>
+            <td><strong>CPU</strong></td>
+            <td>2+ cores (untuk Puppeteer)</td>
+        </tr>
+        <tr>
+            <td><strong>RAM</strong></td>
+            <td>2+ GB (Chrome headless)</td>
+        </tr>
+        <tr>
+            <td><strong>Node.js</strong></td>
+            <td>18.x LTS</td>
+        </tr>
+        <tr>
+            <td><strong>Chrome/Chromium</strong></td>
+            <td>Latest (via Puppeteer)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>7.1.3. Device Monitoring Service</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Specification</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>OS</strong></td>
+            <td>Ubuntu 20.04+ atau Container</td>
+        </tr>
+        <tr>
+            <td><strong>CPU</strong></td>
+            <td>2+ cores</td>
+        </tr>
+        <tr>
+            <td><strong>RAM</strong></td>
+            <td>1+ GB</td>
+        </tr>
+        <tr>
+            <td><strong>Python</strong></td>
+            <td>3.9+</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>7.1.4. Android Kiosk Device</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Specification</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Android Version</strong></td>
+            <td>Android 8.0+ (API 26+)</td>
+        </tr>
+        <tr>
+            <td><strong>RAM</strong></td>
+            <td>2+ GB</td>
+        </tr>
+        <tr>
+            <td><strong>Storage</strong></td>
+            <td>8+ GB (untuk media caching)</td>
+        </tr>
+        <tr>
+            <td><strong>Screen</strong></td>
+            <td>1920x1080 atau higher</td>
+        </tr>
+        <tr>
+            <td><strong>Network</strong></td>
+            <td>WiFi atau Ethernet (recommended)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>7.2. Docker Configuration</h2>
+
+<h3>7.2.1. Docker Compose - Main Application</h3>
+<pre><code># docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cosmic-cms
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./storage:/var/www/html/storage
+      - ./public:/var/www/html/public
+    environment:
+      - APP_ENV=production
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - cosmic-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: cosmic-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: platform
+      MYSQL_USER: platform_user
+      MYSQL_PASSWORD: platform_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - cosmic-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cosmic-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cosmic-network
+
+  pdf-service:
+    build:
+      context: ../generate-pdf
+      dockerfile: Dockerfile
+    container_name: cosmic-pdf
+    restart: unless-stopped
+    ports:
+      - "3333:3333"
+      - "3334:3334"
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=platform_user
+      - DB_PASSWORD=platform_password
+      - DB_NAME=platform
+    depends_on:
+      - mysql
+    networks:
+      - cosmic-network
+
+  device-monitor:
+    build:
+      context: ../remote-android-device
+      dockerfile: Dockerfile
+    container_name: cosmic-monitor
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=platform_user
+      - DB_PASSWORD=platform_password
+      - DB_NAME=platform
+    depends_on:
+      - mysql
+    networks:
+      - cosmic-network
+
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cosmic-queue
+    restart: unless-stopped
+    command: php artisan queue:work redis --tries=3
+    volumes:
+      - ./storage:/var/www/html/storage
+    environment:
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - cosmic-network
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  cosmic-network:
+    driver: bridge
+</code></pre>
+
+<h3>7.2.2. Dockerfile - Laravel Application</h3>
+<pre><code># Dockerfile
+FROM php:8.2-fpm-alpine
+
+# Install dependencies
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    ffmpeg \
+    mysql-client \
+    nodejs \
+    npm \
+    && docker-php-ext-install pdo_mysql
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --optimize-autoloader --no-dev
+
+# Install Node dependencies & build assets
+RUN npm install && npm run build
+
+# Set permissions
+RUN chown -R www-data:www-data storage bootstrap/cache
+
+# Copy nginx & supervisor configs
+COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
+COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose ports
+EXPOSE 80
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+</code></pre>
+
+<h2>7.3. Network Architecture</h2>
+
+<div class="architecture-box">
+    <h3>Production Network Topology</h3>
+    
+    <div class="mermaid">
+graph TB
+    Internet[Internet Users]
+    LB[Nginx Load Balancer<br/>Port 8080/8443]
+    
+    subgraph "Application Layer"
+        App1[Laravel App 1<br/>cosmic-app-1-prod<br/>Port 80]
+        App2[Laravel App 2<br/>cosmic-app-2-prod<br/>Port 80]
+        App3[Laravel App 3<br/>cosmic-app-3-prod<br/>Port 80]
+    end
+    
+    subgraph "Microservices Layer"
+        PDF[PDF Generation Service<br/>generate-pdf-prod<br/>Port 3333]
+        Android[Remote Android Service<br/>remote-android-prod<br/>Port 3001]
+    end
+    
+    subgraph "Background Workers"
+        Scheduler[Laravel Scheduler<br/>cosmic-scheduler-prod]
+        QVideo1[Queue Worker Video 1<br/>cosmic-queue-video-1-prod]
+        QVideo2[Queue Worker Video 2<br/>cosmic-queue-video-2-prod]
+        QVideo3[Queue Worker Video 3<br/>cosmic-queue-video-3-prod]
+        QImage1[Queue Worker Image 1<br/>cosmic-queue-image-1-prod]
+        QImage2[Queue Worker Image 2<br/>cosmic-queue-image-2-prod]
+        QImage3[Queue Worker Image 3<br/>cosmic-queue-image-3-prod]
+        QDefault1[Queue Worker Default 1<br/>cosmic-queue-default-1-prod]
+        QDefault2[Queue Worker Default 2<br/>cosmic-queue-default-2-prod]
+    end
+    
+    subgraph "Data Layer"
+        DB[(MariaDB 10.11<br/>platform-db-prod<br/>Port 3306)]
+        Redis[(Redis 7<br/>platform-redis-prod<br/>Port 6379)]
+        MinIO[(MinIO S3<br/>platform-minio-prod<br/>Port 9000/9001)]
+    end
+    
+    subgraph "Internal Network - kiosk-net"
+        LAN[Internal LAN<br/>192.168.x.x]
+    end
+    
+    subgraph "Kiosk Devices"
+        Kiosk1[Kiosk APK 1<br/>192.168.1.10]
+        Kiosk2[Kiosk APK 2<br/>192.168.1.11]
+        Kiosk3[Kiosk APK N<br/>192.168.1.x]
+    end
+    
+    Internet -->|HTTPS| LB
+    LB -->|Sticky Session<br/>Cookie-based| App1
+    LB -->|Sticky Session<br/>Cookie-based| App2
+    LB -->|Sticky Session<br/>Cookie-based| App3
+    
+    LB -->|/generate-pdf| PDF
+    LB -->|/api/device| Android
+    LB -->|/minio/*| MinIO
+    
+    App1 --> DB
+    App2 --> DB
+    App3 --> DB
+    PDF --> DB
+    Android --> DB
+    
+    App1 --> Redis
+    App2 --> Redis
+    App3 --> Redis
+    Scheduler --> Redis
+    
+    QVideo1 --> Redis
+    QVideo2 --> Redis
+    QVideo3 --> Redis
+    QImage1 --> Redis
+    QImage2 --> Redis
+    QImage3 --> Redis
+    QDefault1 --> Redis
+    QDefault2 --> Redis
+    
+    App1 --> MinIO
+    App2 --> MinIO
+    App3 --> MinIO
+    
+    Scheduler -.->|Schedule Tasks| App1
+    
+    QVideo1 -.->|Process Video Jobs| App1
+    QVideo2 -.->|Process Video Jobs| App2
+    QVideo3 -.->|Process Video Jobs| App3
+    QImage1 -.->|Process Image Jobs| App1
+    QImage2 -.->|Process Image Jobs| App2
+    QImage3 -.->|Process Image Jobs| App3
+    QDefault1 -.->|Process Default Jobs| App1
+    QDefault2 -.->|Process Default Jobs| App2
+    
+    LAN --> Kiosk1
+    LAN --> Kiosk2
+    LAN --> Kiosk3
+    
+    Kiosk1 -.->|API/WebSocket| LB
+    Kiosk2 -.->|API/WebSocket| LB
+    Kiosk3 -.->|API/WebSocket| LB
+    
+    PDF -.->|WebSocket<br/>Port 3335| Kiosk1
+    PDF -.->|WebSocket<br/>Port 3335| Kiosk2
+    PDF -.->|WebSocket<br/>Port 3335| Kiosk3
+    
+    style Internet fill:#e1f5ff
+    style LB fill:#fff3cd
+    style App1 fill:#d4edda
+    style App2 fill:#d4edda
+    style App3 fill:#d4edda
+    style PDF fill:#cfe2ff
+    style Android fill:#cfe2ff
+    style DB fill:#f8d7da
+    style Redis fill:#fff3cd
+    style MinIO fill:#d1ecf1
+    style Scheduler fill:#e2e3e5
+    style QVideo1 fill:#e2e3e5
+    style QVideo2 fill:#e2e3e5
+    style QVideo3 fill:#e2e3e5
+    style QImage1 fill:#e2e3e5
+    style QImage2 fill:#e2e3e5
+    style QImage3 fill:#e2e3e5
+    style QDefault1 fill:#e2e3e5
+    style QDefault2 fill:#e2e3e5
+    </div>
+    
+    <h4>Network Components:</h4>
+    <ul>
+        <li><strong>Load Balancer:</strong> Nginx reverse proxy with sticky session (cookie-based routing)</li>
+        <li><strong>Application Layer:</strong> 3 Laravel containers for high availability</li>
+        <li><strong>Microservices:</strong> PDF generation and device management services</li>
+        <li><strong>Background Workers:</strong> 9 queue workers (3 video, 3 image, 2 default) + 1 scheduler</li>
+        <li><strong>Data Layer:</strong> MariaDB, Redis (cache & queue), MinIO (object storage)</li>
+        <li><strong>Network:</strong> Docker bridge network (kiosk-net) for internal communication</li>
+        <li><strong>External Access:</strong> Ports 8080 (HTTP), 8443 (HTTPS), 3306 (DB), 6379 (Redis), 9000-9001 (MinIO)</li>
+    </ul>
+</div>
+
+<h2>7.4. Deployment Steps</h2>
+
+<h3>Step 1: Server Preparation</h3>
+<pre><code># Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Docker & Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo apt install docker-compose -y
+
+# Clone repository
+git clone &lt;repository-url&gt;
+cd cosmic-media-streaming-dpr
+</code></pre>
+
+<h3>Step 2: Environment Configuration</h3>
+<pre><code># Copy environment file
+cp .env.example .env
+
+# Edit configuration
+nano .env
+
+# Generate app key
+php artisan key:generate
+</code></pre>
+
+<h3>Step 3: Build & Start Services</h3>
+<pre><code># Build Docker images
+docker-compose build
+
+# Start services
+docker-compose up -d
+
+# Run migrations
+docker-compose exec app php artisan migrate --seed
+
+# Create storage link
+docker-compose exec app php artisan storage:link
+</code></pre>
+
+<h3>Step 4: Configure Services</h3>
+<pre><code># Start queue worker
+docker-compose exec app php artisan queue:work redis --daemon
+
+# Start scheduler (cron)
+docker-compose exec app php artisan schedule:work
+
+# Cache configuration
+docker-compose exec app php artisan config:cache
+docker-compose exec app php artisan route:cache
+docker-compose exec app php artisan view:cache
+</code></pre>
+
+<!-- CHAPTER 8 -->
+<h1>8. SECURITY & PERFORMANCE</h1>
+
+<h2>8.1. Security Measures</h2>
+
+<h3>8.1.1. Authentication & Authorization</h3>
+<div class="box warning">
+    <h4>🔒 Security Layers</h4>
+    <ul>
+        <li><strong>Sanctum Token Authentication:</strong> API tokens untuk device authentication</li>
+        <li><strong>Spatie Permissions:</strong> Role-based access control (RBAC)</li>
+        <li><strong>Filament Shield:</strong> Admin panel permission management</li>
+        <li><strong>CORS Configuration:</strong> Restrict allowed origins</li>
+        <li><strong>Rate Limiting:</strong> API throttling (60 requests/minute)</li>
+    </ul>
+</div>
+
+<h3>8.1.2. File Upload Security</h3>
+<pre><code>// File validation
+$request->validate([
+    'file' => [
+        'required',
+        'file',
+        'mimes:mp4,avi,mov,jpg,png,gif',  // Allowed types
+        'max:102400'  // Max 100MB
+    ]
+]);
+
+// MIME type verification
+$mimeType = $file->getMimeType();
+$allowedMimes = ['video/mp4', 'image/jpeg', 'image/png'];
+
+if (!in_array($mimeType, $allowedMimes)) {
+    throw new \Exception('Invalid file type');
+}
+
+// Secure filename
+$filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+</code></pre>
+
+<h3>8.1.3. SQL Injection Prevention</h3>
+<pre><code>// ✅ Good: Parameterized queries
+$users = DB::table('users')
+    ->where('email', $email)
+    ->get();
+
+// ❌ Bad: String concatenation
+// $users = DB::select("SELECT * FROM users WHERE email = '$email'");
+
+// ✅ Eloquent ORM (automatically safe)
+$display = Display::where('id', $request->id)->first();
+</code></pre>
+
+<h3>8.1.4. XSS Prevention</h3>
+<pre><code>// Blade templates auto-escape
+{{ $user->name }}  // Escaped
+
+// Raw output (use with caution)
+{!! $trustedHtml !!}  // Not escaped
+
+// JavaScript injection prevention
+&lt;script&gt;
+    const userName = @json($user->name);  // Properly escaped
+&lt;/script&gt;
+</code></pre>
+
+<h2>8.2. Performance Optimizations</h2>
+
+<h3>8.2.1. Database Query Optimization</h3>
+<div class="box success">
+    <h4>⚡ Query Performance Improvements</h4>
+    
+    <p><strong>Before (N+1 Problem):</strong></p>
+    <pre><code>// 101 queries for 100 displays
+$displays = Display::all();
+foreach ($displays as $display) {
+    echo $display->schedule->name;  // +1 query per display
+}
+</code></pre>
+    
+    <p><strong>After (Eager Loading):</strong></p>
+    <pre><code>// Just 1 query
+$displays = Display::with([
+    'schedule',
+    'schedule.playlists.layouts.spots.media'
+])->get();
+
+foreach ($displays as $display) {
+    echo $display->schedule->name;  // No additional query
+}
+</code></pre>
+</div>
+
+<h3>8.2.2. Redis Caching Strategy</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Data Type</th>
+            <th>Cache Duration</th>
+            <th>Invalidation Trigger</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Layout Configuration</td>
+            <td>60 minutes</td>
+            <td>Layout update</td>
+        </tr>
+        <tr>
+            <td>Media Metadata</td>
+            <td>30 minutes</td>
+            <td>Media update/delete</td>
+        </tr>
+        <tr>
+            <td>Display Settings</td>
+            <td>15 minutes</td>
+            <td>Display update</td>
+        </tr>
+        <tr>
+            <td>Schedule Data</td>
+            <td>10 minutes</td>
+            <td>Schedule modification</td>
+        </tr>
+        <tr>
+            <td>Device Status</td>
+            <td>3 seconds</td>
+            <td>Status change</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>8.2.3. Queue-based Processing</h3>
+<pre><code>// Dispatch job for async processing
+use App\Jobs\RefreshDisplayJob;
+
+// Instead of synchronous refresh
+// $display->refresh();  // Blocks response
+
+// Use job queue
+RefreshDisplayJob::dispatch($display)
+    ->onQueue('high-priority')
+    ->delay(now()->addSeconds(5));
+
+// Job configuration
+class RefreshDisplayJob implements ShouldQueue
+{
+    public $tries = 3;
+    public $timeout = 60;
+    public $backoff = [10, 30, 60];  // Exponential backoff
+    
+    public function handle()
+    {
+        // Heavy processing here
+        $this->display->buildLayout();
+        $this->display->notifyDevices();
+    }
+}
+</code></pre>
+
+<h3>8.2.4. Asset Optimization</h3>
+<ul>
+    <li><strong>Image Optimization:</strong> Auto-resize, WebP conversion, lazy loading</li>
+    <li><strong>Video Transcoding:</strong> FFmpeg conversion to web-optimized formats</li>
+    <li><strong>CSS/JS Minification:</strong> Vite build optimization</li>
+    <li><strong>CDN Integration:</strong> Static assets served from S3/CloudFront</li>
+    <li><strong>HTTP/2:</strong> Multiplexed connections, header compression</li>
+</ul>
+
+<h2>8.3. Monitoring & Logging</h2>
+
+<h3>8.3.1. Application Logging</h3>
+<pre><code>// Log channels configuration
+'channels' => [
+    'stack' => [
+        'driver' => 'stack',
+        'channels' => ['daily', 'slack'],
+    ],
+    'daily' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/laravel.log'),
+        'level' => 'debug',
+        'days' => 14,
+    ],
+]
+
+// Usage
+Log::info('Display updated', ['display_id' => $display->id]);
+Log::error('Failed to refresh display', [
+    'display_id' => $display->id,
+    'error' => $e->getMessage()
+]);
+</code></pre>
+
+<h3>8.3.2. Performance Monitoring</h3>
+<pre><code>// Laravel Telescope for debugging
+php artisan telescope:install
+
+// Query logging
+DB::enableQueryLog();
+// ... queries ...
+dd(DB::getQueryLog());
+
+// Response time tracking
+Route::get('/dashboard', function () {
+    $start = microtime(true);
+    
+    // ... processing ...
+    
+    $duration = microtime(true) - $start;
+    Log::info('Dashboard load time: ' . $duration . 's');
+});
+</code></pre>
+
+<!-- CHAPTER 9 -->
+<h1>9. MAINTENANCE & TROUBLESHOOTING</h1>
+
+<h2>9.1. Common Issues & Solutions</h2>
+
+<h3>9.1.1. Display Not Updating</h3>
+<div class="box warning">
+    <h4>🔧 Troubleshooting Steps</h4>
+    <ol>
+        <li><strong>Check Pusher Connection:</strong>
+            <ul>
+                <li>Verify Pusher credentials in .env</li>
+                <li>Check WebSocket connection in browser console</li>
+                <li>Test: <code>pusher.connection.state</code></li>
+            </ul>
+        </li>
+        <li><strong>Check Queue Worker:</strong>
+            <ul>
+                <li><code>php artisan queue:work --once</code></li>
+                <li>Check failed jobs: <code>php artisan queue:failed</code></li>
+                <li>Retry: <code>php artisan queue:retry all</code></li>
+            </ul>
+        </li>
+        <li><strong>Clear Cache:</strong>
+            <ul>
+                <li><code>php artisan cache:clear</code></li>
+                <li><code>php artisan config:clear</code></li>
+                <li><code>redis-cli FLUSHALL</code></li>
+            </ul>
+        </li>
+        <li><strong>Check Device Connection:</strong>
+            <ul>
+                <li>Test ping: <code>curl http://device-ip/api/ping</code></li>
+                <li>Check device logs</li>
+                <li>Restart APK</li>
+            </ul>
+        </li>
+    </ol>
+</div>
+
+<h3>9.1.2. Video Playback Issues</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Symptom</th>
+            <th>Possible Cause</th>
+            <th>Solution</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Video not playing</td>
+            <td>Codec not supported</td>
+            <td>Transcode to H.264: <code>ffmpeg -i input.avi -vcodec h264 output.mp4</code></td>
+        </tr>
+        <tr>
+            <td>Buffering issues</td>
+            <td>Large file size</td>
+            <td>Optimize bitrate: <code>ffmpeg -i input.mp4 -b:v 2M output.mp4</code></td>
+        </tr>
+        <tr>
+            <td>No audio</td>
+            <td>Audio codec issue</td>
+            <td>Re-encode audio: <code>ffmpeg -i input.mp4 -acodec aac output.mp4</code></td>
+        </tr>
+        <tr>
+            <td>Slow loading</td>
+            <td>No streaming support</td>
+            <td>Move moov atom: <code>ffmpeg -i input.mp4 -movflags faststart output.mp4</code></td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>9.1.3. Database Performance Issues</h3>
+<pre><code># Check slow queries
+mysql> SHOW PROCESSLIST;
+
+# Enable slow query log
+[mysqld]
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+# Analyze table
+mysql> ANALYZE TABLE displays, layouts, medias;
+
+# Add indexes
+mysql> ALTER TABLE spots ADD INDEX idx_layout_media (layout_id, media_id);
+
+# Optimize tables
+mysql> OPTIMIZE TABLE displays, playlists, layouts;
+</code></pre>
+
+<h2>9.2. Maintenance Tasks</h2>
+
+<h3>Daily Tasks</h3>
+<ul>
+    <li>Monitor device connection status</li>
+    <li>Check disk space: <code>df -h</code></li>
+    <li>Review error logs: <code>tail -f storage/logs/laravel.log</code></li>
+</ul>
+
+<h3>Weekly Tasks</h3>
+<ul>
+    <li>Backup database: <code>mysqldump -u user -p platform > backup.sql</code></li>
+    <li>Clean old logs: <code>find storage/logs -type f -mtime +30 -delete</code></li>
+    <li>Update dependencies: <code>composer update</code></li>
+</ul>
+
+<h3>Monthly Tasks</h3>
+<ul>
+    <li>Security updates: <code>apt update && apt upgrade</code></li>
+    <li>Performance review: Check slow query log</li>
+    <li>Storage cleanup: Remove unused media files</li>
+    <li>SSL certificate renewal</li>
+</ul>
+
+<h2>9.3. Backup & Recovery</h2>
+
+<h3>9.3.1. Database Backup</h3>
+<pre><code>#!/bin/bash
+# backup.sh
+
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/backups"
+DB_NAME="platform"
+
+# Backup database
+mysqldump -u $DB_USER -p$DB_PASS $DB_NAME > $BACKUP_DIR/db_$DATE.sql
+
+# Backup files
+tar -czf $BACKUP_DIR/files_$DATE.tar.gz \
+    /var/www/html/storage/app \
+    /var/www/html/public/content
+
+# Remove old backups (keep 30 days)
+find $BACKUP_DIR -type f -mtime +30 -delete
+
+# Upload to S3
+aws s3 cp $BACKUP_DIR/db_$DATE.sql s3://my-bucket/backups/
+</code></pre>
+
+<h3>9.3.2. Recovery Procedure</h3>
+<pre><code># Stop services
+docker-compose down
+
+# Restore database
+mysql -u user -p platform < backup.sql
+
+# Restore files
+tar -xzf files_backup.tar.gz -C /var/www/html/
+
+# Fix permissions
+chown -R www-data:www-data /var/www/html/storage
+
+# Restart services
+docker-compose up -d
+
+# Clear cache
+docker-compose exec app php artisan cache:clear
+docker-compose exec app php artisan config:cache
+</code></pre>
+
+<h2>9.4. Performance Monitoring Commands</h2>
+
+<pre><code># Check Redis memory usage
+redis-cli INFO memory
+
+# Monitor queue jobs
+php artisan queue:monitor redis:default --max=100
+
+# Check database connections
+mysql> SHOW STATUS LIKE 'Threads_connected';
+
+# Monitor disk I/O
+iostat -x 1
+
+# Check memory usage
+free -h
+
+# Monitor network
+iftop
+
+# Docker stats
+docker stats
+
+# Laravel queue status
+php artisan queue:work --once --stop-when-empty
+</code></pre>
+
+<h2>9.5. Contact & Support</h2>
+
+<div class="box info">
+    <h4>📞 Technical Support</h4>
+    <ul>
+        <li><strong>Documentation:</strong> /doc/ directory di repository</li>
+        <li><strong>Logs Location:</strong> storage/logs/laravel.log</li>
+        <li><strong>Configuration:</strong> config/ directory</li>
+        <li><strong>Environment:</strong> .env file</li>
+    </ul>
+</div>
+
+---
+
+<div style="text-align: center; margin-top: 50px; padding: 20px; background-color: #f8f9fa; border-top: 3px solid #3498db;">
+    <h3>END OF DOCUMENTATION</h3>
+    <p><strong>Cosmic Media Streaming Platform</strong></p>
+    <p>Version 1.0 | January 2026</p>
+    <p><em>Dokumentasi ini dibuat untuk keperluan teknis dan maintenance platform</em></p>
+</div>
+
+</body>
+</html>

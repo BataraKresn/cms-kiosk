@@ -1,0 +1,111 @@
+# Android Application (separate repository)
+kiosk-touchscreen-dpr-app/
+kiosk-touchscreen-app/
+
+# Remote Control Application (separate repository)
+# remote-control-poc/
+
+# Runtime Data (all in data-kiosk/)
+data-kiosk/
+
+# Temporary Storage & Archives
+storage-temp/
+*.tar.zst
+*.tar.gz
+*.tar.bz2
+*.zip
+myfolder.tar.zst
+
+# Database Files
+*.sql
+!platform.sql
+restore.sql
+
+# Environment files
+.env
+.env.dev
+.env.prod
+.env.local
+.env.*.local
+
+# Keep example files
+!.env.example
+
+# Sensitive Files
+*.pem
+*.key
+*.keystore
+*.jks
+
+# Laravel (cosmic-media-streaming-dpr)
+cosmic-media-streaming-dpr/vendor/
+cosmic-media-streaming-dpr/node_modules/
+cosmic-media-streaming-dpr/.env*
+!cosmic-media-streaming-dpr/.env.example
+cosmic-media-streaming-dpr/storage/app/public/*
+cosmic-media-streaming-dpr/storage/framework/cache/*
+cosmic-media-streaming-dpr/storage/framework/sessions/*
+cosmic-media-streaming-dpr/storage/framework/views/*
+cosmic-media-streaming-dpr/storage/logs/*
+cosmic-media-streaming-dpr/bootstrap/cache/*
+cosmic-media-streaming-dpr/public/hot
+cosmic-media-streaming-dpr/public/storage
+cosmic-media-streaming-dpr/public/build
+cosmic-media-streaming-dpr/*.sql
+cosmic-media-streaming-dpr/backup.sql
+cosmic-media-streaming-dpr/cmsdb-backup.sql
+cosmic-media-streaming-dpr/mariadb/*
+
+# Node.js (generate-pdf service)
+generate-pdf/node_modules/
+generate-pdf/uploads/*
+generate-pdf/hls_output/*
+
+# Python (remote-android-device)
+remote-android-device/myenv/
+remote-android-device/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+**/*.log
+logs/
+
+# Docker
+docker-data/
+.docker/
+
+# Monitoring
+monitoring/prometheus/data/
+monitoring/grafana/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Node modules (if any in root)
+node_modules/
+
+# Docker volumes (named volumes - no longer used, but keep for safety)
+*_data_dev/
+*_data_prod/
+
+# Backup files
+*.backup-*
+platform.sql.backup-*
