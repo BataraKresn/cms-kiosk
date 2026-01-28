@@ -1,17 +1,39 @@
-# Cosmic Media Streaming Platform - Microservices Architecture
+# 🎯 Cosmic Media Streaming Platform - Microservices Architecture
+
+[![Production Ready](https://img.shields.io/badge/Production-Ready-brightgreen.svg)](https://github.com/BataraKresn/cms-kiosk)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker)](https://www.docker.com/)
+[![Laravel](https://img.shields.io/badge/Laravel-10-FF2D20.svg?logo=laravel)](https://laravel.com)
+[![Filament](https://img.shields.io/badge/Filament-3-EAB308.svg)](https://filamentphp.com)
+[![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
+
+**Repository:** https://github.com/BataraKresn/cms-kiosk.git
 
 ## 📋 Overview
 
-Platform manajemen konten digital signage dan kiosk yang dibangun dengan arsitektur microservices menggunakan Docker dan Docker Compose. Platform ini menggunakan MinIO sebagai object storage untuk semua media files, dengan load balancing untuk high availability.
+Platform manajemen konten digital signage dan kiosk yang dibangun dengan arsitektur microservices menggunakan Docker dan Docker Compose. Platform ini dilengkapi dengan **Remote Control System** untuk monitoring dan kontrol perangkat Android secara real-time, serta MinIO sebagai object storage untuk semua media files.
 
-### Microservices Components:
+### 🎮 Key Features:
 
-1. **Cosmic Media Streaming (Laravel)** - Main CMS & Media Management with Filament 3 admin panel
+- ✅ **Microservices Architecture** - 4 independent services dengan Docker Compose
+- ✅ **Remote Control System** - Control Android devices via WebSocket (real-time screen mirroring & input injection)
+- ✅ **Auto-Device Registration** - Android devices register automatically, no manual setup
+- ✅ **Filament 3 Admin Panel** - Modern, responsive admin interface
+- ✅ **Object Storage (MinIO)** - S3-compatible storage untuk 40GB+ media assets
+- ✅ **Queue System** - Background job processing untuk video/image optimization
+- ✅ **Load Balancing** - Nginx reverse proxy dengan 3 app replicas
+- ✅ **Database Backup** - Automated backup dengan rotation (keeps 4 backups)
+- ✅ **Production Optimized** - Performance tuning & monitoring ready
+
+### 🏗️ Microservices Components:
+
+1. **Cosmic Media Streaming (Laravel 10)** - Main CMS & Media Management with Filament 3
 2. **Generate PDF (Node.js)** - PDF Generation, WebSocket Service & HLS Streaming  
-3. **Remote Android Device (Python)** - Device Management, Monitoring & Remote Control
-4. **MinIO Object Storage** - S3-compatible storage for all media assets (40GB+)
-5. **Redis** - High-performance cache, session store, and queue backend
-6. **MariaDB 10.11** - Primary database with production-tuned configuration
+3. **Remote Android Device (Python/Flask)** - Device Management & Monitoring
+4. **Remote Control Relay (Node.js)** - WebSocket relay for real-time device control
+5. **MinIO Object Storage** - S3-compatible storage for all media assets (40GB+)
+6. **Redis 7** - High-performance cache, session store, and queue backend
+7. **MariaDB 10.11** - Primary database with production-tuned configuration
+8. **Nginx** - Reverse proxy & load balancer
 
 ## 🏗️ Architecture
 
@@ -86,15 +108,16 @@ All data and documentation are organized with **dev/prod separation**:
 - **`data-kiosk/prod/`** - Production runtime data (isolated)
 - **`data-kiosk/backups/`** - Database backups
 - **`data-kiosk/logs/`** - Application logs
-- **`Doc/`** - All documentation files
+- **`doc/`** - All documentation files (31 consolidated files)
 
-See [FOLDER_STRUCTURE.md](Doc/FOLDER_STRUCTURE.md) for details.
+See [STRUCTURE_GUIDE.md](doc/STRUCTURE_GUIDE.md) for complete details.
 
 ### Development Environment
 
 ```bash
-# 1. Clone repository dan masuk ke direktori
-cd /home/ubuntu/kiosk
+# 1. Clone repository
+git clone https://github.com/BataraKresn/cms-kiosk.git
+cd cms-kiosk
 
 # 2. Setup environment (sudah ada .env.dev dengan safe defaults)
 # File sudah ready, tidak perlu edit untuk development
@@ -552,26 +575,113 @@ gunzip < data-kiosk/backups/platform-YYYYMMDD-HHMMSS.sql.gz | \
   mysql -uroot -p"${DB_ROOT_PASSWORD}" platform
 ```
 
-## 📚 Additional Documentation
+## 📚 Documentation
 
-See [Doc/](Doc/) folder for all documentation:
+### 📖 Complete Documentation (31 Files)
 
-- [FOLDER_STRUCTURE.md](Doc/FOLDER_STRUCTURE.md) - Folder organization guide
-- [QUICK_START.md](Doc/QUICK_START.md) - Quick start guide
-- [DEPLOYMENT_CHECKLIST.md](Doc/DEPLOYMENT_CHECKLIST.md) - Deployment checklist
-- [FILE_STRUCTURE.md](Doc/FILE_STRUCTURE.md) - Environment files guide
-- [CLEANUP_SUMMARY.md](Doc/CLEANUP_SUMMARY.md) - Recent changes
-- [MICROSERVICES_READINESS_ANALYSIS.md](Doc/MICROSERVICES_READINESS_ANALYSIS.md) - Architecture analysis
-- [MIGRATION_AND_MAINTENANCE_GUIDE.md](Doc/MIGRATION_AND_MAINTENANCE_GUIDE.md) - Migration guide
-- [TECHNICAL_DOCUMENTATION.html](Doc/TECHNICAL_DOCUMENTATION.html) - Technical specs
+All documentation is consolidated in the [doc/](doc/) directory:
 
-## 🤝 Support
+#### 🚀 Getting Started
+- [QUICK_START.md](doc/QUICK_START.md) - Quick start guide for new deployments
+- [QUICK_REFERENCE.md](doc/QUICK_REFERENCE.md) - Quick reference commands
+- [DEPLOYMENT_CHECKLIST.md](doc/DEPLOYMENT_CHECKLIST.md) - Pre-deployment validation checklist
+
+#### 📁 Project Structure
+- [STRUCTURE_GUIDE.md](doc/STRUCTURE_GUIDE.md) - Complete file & folder organization (v2.0.0)
+- [PROJECT_SUMMARY.md](doc/PROJECT_SUMMARY.md) - Executive summary & status (v2.0.0)
+
+#### 🛠️ Technical Documentation
+- [TECHNICAL_DOCUMENTATION.html](doc/TECHNICAL_DOCUMENTATION.html) - Complete technical specifications
+- [Teknis_Dokumentasi.md](doc/Teknis_Dokumentasi.md) - Indonesian technical documentation
+- [MICROSERVICES_READINESS_ANALYSIS.md](doc/MICROSERVICES_READINESS_ANALYSIS.md) - Architecture analysis (4.5/5 score)
+
+#### 🗄️ Database & Backup
+- [DATABASE_BACKUP_GUIDE.md](doc/DATABASE_BACKUP_GUIDE.md) - Backup & restore procedures
+- [DATABASE_CREDENTIALS.md](doc/DATABASE_CREDENTIALS.md) - Database access credentials
+
+#### 🎯 Deployment & Operations
+- [MIGRATION_AND_MAINTENANCE_GUIDE.md](doc/MIGRATION_AND_MAINTENANCE_GUIDE.md) - Migration procedures
+- [LOAD_BALANCING_GUIDE.md](doc/LOAD_BALANCING_GUIDE.md) - Load balancer configuration
+- [NGINX_CONFIGURATION.md](doc/NGINX_CONFIGURATION.md) - Nginx reverse proxy setup
+
+#### ⚡ Performance & Optimization
+- [PERFORMANCE_OPTIMIZATIONS.md](doc/PERFORMANCE_OPTIMIZATIONS.md) - General optimizations
+- [PRODUCTION_PERFORMANCE_GUIDE.md](doc/PRODUCTION_PERFORMANCE_GUIDE.md) - Production tuning
+- [MARIADB_CONFIGURATION_OPTIMIZATION.md](doc/MARIADB_CONFIGURATION_OPTIMIZATION.md) - Database optimization
+- [REDIS_CAPACITY_25_KIOSK.md](doc/REDIS_CAPACITY_25_KIOSK.md) - Redis capacity planning
+
+#### 🔧 Configuration & Best Practices
+- [ENV_BEST_PRACTICES.md](doc/ENV_BEST_PRACTICES.md) - Environment configuration
+- [QUEUE_IMPLEMENTATION_FAQ.md](doc/QUEUE_IMPLEMENTATION_FAQ.md) - Queue system FAQ
+- [DOCKERFILE_COMPATIBILITY.md](doc/DOCKERFILE_COMPATIBILITY.md) - Docker compatibility guide
+- [IMAGE_AND_CONTAINER_NAMING.md](doc/IMAGE_AND_CONTAINER_NAMING.md) - Naming conventions
+
+#### 🔒 Security & Monitoring
+- [SECURITY_AND_HEALTH_CHECK_IMPROVEMENTS.md](doc/SECURITY_AND_HEALTH_CHECK_IMPROVEMENTS.md) - Security enhancements
+
+#### 📊 Architecture & Design
+- [VISUAL_ARCHITECTURE.md](doc/VISUAL_ARCHITECTURE.md) - Architecture diagrams
+- [MERMAID_DIAGRAMS.md](doc/MERMAID_DIAGRAMS.md) - System flow diagrams
+
+#### 🏢 Server Specifications
+- [SERVER_SPECIFICATIONS.md](doc/SERVER_SPECIFICATIONS.md) - Hardware specs & deployment tiers (v3.0)
+
+#### 📝 Updates & Changes
+- [UPDATES_JANUARY_2026.md](doc/UPDATES_JANUARY_2026.md) - Latest updates
+- [INDEX.md](doc/INDEX.md) - Documentation index
+
+### 📋 Documentation Access
+
+```bash
+# Browse documentation locally
+cd doc/
+ls -lh
+
+# View specific guide
+cat doc/QUICK_START.md
+
+# Search documentation
+grep -r "keyword" doc/
+```
+
+## 🤝 Contributing & Support
+
+### Git Workflow
+
+```bash
+# Clone repository
+git clone https://github.com/BataraKresn/cms-kiosk.git
+cd cms-kiosk
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes and commit
+git add .
+git commit -m "Description of changes"
+
+# Push to GitHub
+git push origin feature/your-feature-name
+
+# Update from remote
+git pull origin master
+```
+
+### Getting Help
 
 For issues or questions:
 1. Check logs: `docker compose logs -f [service]`
-2. Review documentation
+2. Review [documentation](doc/)
 3. Check Docker and Docker Compose versions
-4. Ensure sufficient system resources
+4. Ensure sufficient system resources (4GB RAM minimum)
+5. Review [QUICK_REFERENCE.md](doc/QUICK_REFERENCE.md) for common commands
+
+### System Requirements
+
+- Docker 20.10+
+- Docker Compose 2.0+
+- 4GB RAM minimum (8GB recommended for production)
+- 50GB disk space (including 40GB+ MinIO storage)
 
 ## 📄 License
 
@@ -619,5 +729,7 @@ For issues or questions:
 
 ---
 
-**Last Updated**: January 23, 2026  
-**Version**: 2.0.0
+**Repository**: https://github.com/BataraKresn/cms-kiosk.git  
+**Last Updated**: January 27, 2026  
+**Version**: 2.1.0  
+**Documentation**: 31 consolidated files in [doc/](doc/) directory
