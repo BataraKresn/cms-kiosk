@@ -14,9 +14,12 @@ use Illuminate\Support\HtmlString;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use stdClass;
 use Str;
+use App\Filament\Traits\OptimizeQueries;
 
 class MediaHtmlResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = MediaHtml::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -45,7 +48,7 @@ class MediaHtmlResource extends Resource
         return [
             Forms\Components\TextInput::make('name')->required(),
             // Forms\Components\TextInput::make('slug'),
-            Forms\Components\FileUpload::make('path')->required()
+            Forms\Components\FileUpload::make('path')->required(fn (string $operation): bool => $operation === 'create')
                 ->getUploadedFileNameForStorageUsing(
                     fn (TemporaryUploadedFile $file): string => (string) str(Str::lower($file->getClientOriginalName()))
                         ->prepend('html-'),

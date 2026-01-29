@@ -12,9 +12,12 @@ use Filament\Tables\Table;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use stdClass;
 use Str;
+use App\Filament\Traits\OptimizeQueries;
 
 class MediaImageResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = MediaImage::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -44,7 +47,7 @@ class MediaImageResource extends Resource
             // Forms\Components\TextInput::make('slug')->required(),
             Forms\Components\FileUpload::make('path')
                 ->label('Image File')
-                ->required()
+                ->required(fn (string $operation): bool => $operation === 'create')
                 ->optimize('webp')  // Optimize to WebP format for better performance
                 ->getUploadedFileNameForStorageUsing(
                     fn(TemporaryUploadedFile $file): string => (string) str(Str::lower($file->getClientOriginalName()))

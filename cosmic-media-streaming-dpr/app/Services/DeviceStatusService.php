@@ -28,10 +28,7 @@ class DeviceStatusService
             $connectedName = $connectedDevices->pluck('name')->toArray();
 
             return [
-                'labels' => [
-                    array_merge(['Connected'], $connectedName),
-                    array_merge(['Disconnected'], $disconnectedName)
-                ],
+                'labels' => ['Connected', 'Disconnected'],
                 'datasets' => [
                     [
                         'label' => 'Device Status',
@@ -60,10 +57,10 @@ class DeviceStatusService
             'datasets' => [
                 [
                     'label' => 'Device Status',
-                    'data' => [0, 0], // Default values when data cannot be fetched
+                    'data' => [0, 0],
                     'backgroundColor' => [
-                        'rgb(54, 162, 235)', // Blue for connected
-                        'rgb(255, 99, 132)', // Red for disconnected
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 99, 132)',
                     ],
                     'hoverOffset' => 4,
                 ],

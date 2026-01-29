@@ -17,9 +17,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
 
 class RemoteResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = Remote::class;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Management';

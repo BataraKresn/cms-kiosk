@@ -11,9 +11,12 @@ use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class ScheduleResource extends Resource
 {
+    use OptimizeQueries;
     protected static ?string $model = Schedule::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
@@ -25,6 +28,11 @@ class ScheduleResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('schedule_playlists');
     }
 
     public static function formSchema()

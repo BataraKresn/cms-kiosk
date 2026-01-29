@@ -10,9 +10,12 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
 
 class MediaLiveUrlResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = MediaLiveUrl::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

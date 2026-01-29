@@ -23,10 +23,12 @@ use stdClass;
 use App\Exports\MediaExport;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
- 
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class MediaResource extends Resource
 {
+    use OptimizeQueries;
     protected static ?string $model = Media::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-photo';
@@ -36,6 +38,11 @@ class MediaResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('mediable');
     }
 
     public static function form(Form $form): Form

@@ -11,9 +11,12 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Str;
+use App\Filament\Traits\OptimizeQueries;
 
 class MediaQrCodeResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = MediaQrCode::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

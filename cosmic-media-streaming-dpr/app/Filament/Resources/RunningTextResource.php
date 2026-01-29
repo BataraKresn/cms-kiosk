@@ -14,9 +14,12 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
 
 class RunningTextResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = RunningText::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-ellipsis';

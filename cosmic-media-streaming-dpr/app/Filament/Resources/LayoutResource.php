@@ -19,9 +19,13 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class LayoutResource extends Resource
 {
+    use OptimizeQueries;
+
     protected static ?string $model = Layout::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-computer-desktop';
@@ -31,6 +35,11 @@ class LayoutResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['screen', 'spots']);
     }
 
     // public static function canCreate(): bool

@@ -12,9 +12,13 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class MediaSliderResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = MediaSlider::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-view-columns';
@@ -28,6 +32,11 @@ class MediaSliderResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('media_slider_contents');
     }
 
     public static function formSchema()

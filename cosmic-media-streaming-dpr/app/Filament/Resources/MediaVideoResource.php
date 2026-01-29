@@ -22,9 +22,12 @@ use Filament\Tables\Actions\Action;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Illuminate\Support\HtmlString;
+use App\Filament\Traits\OptimizeQueries;
 
 class MediaVideoResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = MediaVideo::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -42,7 +45,7 @@ class MediaVideoResource extends Resource
 
             FileUpload::make('path')
                 ->label('Upload Video')
-                ->required()
+                ->required(fn (string $operation): bool => $operation === 'create')
                 ->downloadable()
                 ->previewable(false)
                 ->acceptedFileTypes(['video/mp4'])

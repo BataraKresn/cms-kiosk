@@ -10,9 +10,13 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserResource extends Resource
 {
+    use OptimizeQueries;
+    
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
@@ -28,6 +32,11 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('password')->password(),
                 Forms\Components\Select::make('roles')->relationship('roles', 'name'),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('roles');
     }
 
     public static function table(Table $table): Table

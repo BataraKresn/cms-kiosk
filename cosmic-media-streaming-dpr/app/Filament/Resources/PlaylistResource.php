@@ -12,9 +12,12 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class PlaylistResource extends Resource
 {
+    use OptimizeQueries;
     protected static ?string $model = Playlist::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-play-pause';
@@ -28,6 +31,11 @@ class PlaylistResource extends Resource
         return Cache::remember('playlist_count', 60, function () {
             return static::getModel()::count();
         });
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('playlist_layouts');
     }
 
     public static function formSchema()

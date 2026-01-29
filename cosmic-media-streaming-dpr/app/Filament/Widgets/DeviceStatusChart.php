@@ -14,6 +14,10 @@ class DeviceStatusChart extends ChartWidget
     protected static ?string $heading = 'Device Status';
     protected static ?string $model = Remote::class;
     protected DeviceStatusService $service;
+    protected bool $hasData = false;
+    
+    // Auto-refresh setiap 30 detik untuk detect device baru
+    protected static ?string $pollingInterval = '30s';
 
     public function boot(): void
     {
@@ -22,7 +26,32 @@ class DeviceStatusChart extends ChartWidget
 
     protected function getData(): array
     {
-        return $this->service->getChartData();
+        $data = $this->service->getChartData();
+        $total = array_sum($data['datasets'][0]['data'] ?? [0]);
+        $this->hasData = $total > 0;
+        
+        // Return empty to hide chart if no data
+        if (!$this->hasData) {
+            return [
+                'labels' => [],
+                'datasets' => [],
+            ];
+        }
+        
+        return $data;
+    }
+
+    public function getDescription(): ?string
+    {
+        if (!$this->hasData) {
+            return '📱 No devices registered yet. Devices will appear automatically when kiosk APK is installed and connected.';
+        }
+        
+        $data = $this->service->getChartData();
+        $connected = $data['datasets'][0]['data'][0] ?? 0;
+        $disconnected = $data['datasets'][0]['data'][1] ?? 0;
+        
+        return "🟢 Connected: {$connected} | 🔴 Disconnected: {$disconnected}";
     }
 
     protected function getType(): string

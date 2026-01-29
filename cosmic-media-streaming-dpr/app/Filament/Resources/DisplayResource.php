@@ -22,9 +22,13 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use stdClass;
+use App\Filament\Traits\OptimizeQueries;
+use Illuminate\Database\Eloquent\Builder;
 
 class DisplayResource extends Resource
 {
+    use OptimizeQueries;
+
     protected static ?string $model = Display::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-device-tablet';
@@ -36,6 +40,11 @@ class DisplayResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['schedule', 'screen']);
     }
 
     public static function generalSchema()
