@@ -105,17 +105,86 @@ class RemoteResource extends Resource
                 Tables\Columns\TextColumn::make('no.')
                     ->label('No.')
                     ->getStateUsing(function (stdClass $rowLoop, $record) {
-                        // Get current page and per-page size using Laravel's built-in pagination
-                        $page = request()->get('page', 1); // Default to page 1
-                        $perPage = request()->get('per_page', 10); // Default pagination size
-    
-                        // Calculate row number based on current page and per-page size
+                        $page = request()->get('page', 1);
+                        $perPage = request()->get('per_page', 10);
                         return ($page - 1) * $perPage + $rowLoop->iteration;
                     }),
-                Tables\Columns\TextColumn::make('name')->searchable(),
-                Tables\Columns\TextColumn::make('status')->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created At')
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Device Name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('status')
+                    ->icon(fn (string $state): string => match ($state) {
+                        'Connected' => 'heroicon-o-check-circle',
+                        'Disconnected' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'Connected' => 'success',
+                        'Disconnected' => 'danger',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('battery_level')
+                    ->label('Battery')
+                    ->suffix('%')
+                    ->color(fn ($state) => match(true) {
+                        $state >= 80 => 'success',
+                        $state >= 50 => 'warning',
+                        $state >= 20 => 'danger',
+                        default => 'gray'
+                    })
+                    ->icon(fn ($state) => match(true) {
+                        $state >= 80 => 'heroicon-o-battery-100',
+                        $state >= 50 => 'heroicon-o-battery-50',
+                        default => 'heroicon-o-battery-0'
+                    }),
+                Tables\Columns\TextColumn::make('wifi_strength')
+                    ->label('WiFi')
+                    ->formatStateUsing(fn ($state) => $state ? "$state dBm" : 'N/A')
+                    ->color(fn ($state) => match(true) {
+                        $state >= -50 => 'success',
+                        $state >= -70 => 'warning',
+                        default => 'danger'
+                    }),
+                Tables\Columns\TextColumn::make('network_type')
+                    ->label('Network')
+                    ->badge()
+                    ->color(fn ($state) => match($state) {
+                        'WiFi' => 'success',
+                        'Mobile' => 'warning',
+                        'Ethernet' => 'info',
+                        default => 'gray'
+                    }),
+                Tables\Columns\TextColumn::make('ram_usage_mb')
+                    ->label('RAM')
+                    ->formatStateUsing(fn ($state, $record) => 
+                        $state && $record->ram_total_mb 
+                            ? sprintf('%d / %d MB', $state, $record->ram_total_mb)
+                            : 'N/A'
+                    ),
+                Tables\Columns\TextColumn::make('storage_available_mb')
+                    ->label('Storage')
+                    ->formatStateUsing(fn ($state) => 
+                        $state ? sprintf('%.1f GB', $state / 1024) : 'N/A'
+                    ),
+                Tables\Columns\IconColumn::make('screen_on')
+                    ->label('Screen')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-sun')
+                    ->falseIcon('heroicon-o-moon')
+                    ->trueColor('success')
+                    ->falseColor('gray'),
+                Tables\Columns\TextColumn::make('cpu_temp')
+                    ->label('CPU')
+                    ->formatStateUsing(fn ($state) => $state ? sprintf('%.1f°C', $state) : 'N/A')
+                    ->color(fn ($state) => match(true) {
+                        $state < 50 => 'success',
+                        $state < 70 => 'warning',
+                        default => 'danger'
+                    }),
+                Tables\Columns\TextColumn::make('last_seen_at')
+                    ->label('Last Seen')
+                    ->dateTime('d M Y H:i')
                     ->sortable(),
             ])
             ->filters([
@@ -131,14 +200,6 @@ class RemoteResource extends Resource
                     ->url(fn (Remote $record): string => route('filament.admin.resources.remotes.remote-control-viewer', ['record' => $record->id]))
                     ->visible(fn (Remote $record): bool => $record->remote_control_enabled && $record->status === 'Connected')
                     ->openUrlInNewTab(),
-                Action::make('legacyRemoteControl')
-                    ->label('Legacy VNC')
-                    ->icon('gmdi-cast-connected-o')
-                    ->color('info')
-                    ->url(function (Remote $record) {
-                        Log::info($record->url);
-                        return $record->url;
-                    })->openUrlInNewTab()
             ])
             ->bulkActions([
                 // Tables\Actions\BulkActionGroup::make([
@@ -189,5 +250,10 @@ class RemoteResource extends Resource
             'edit' => Pages\EditRemote::route('/{record}/edit'),
             'remote-control-viewer' => Pages\RemoteControlViewer::route('/{record}/remote-control'),
         ];
+    }
+    
+    public static function canCreate(): bool
+    {
+        return false; // Disable manual creation, devices auto-register via APK
     }
 }

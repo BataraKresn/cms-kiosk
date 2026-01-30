@@ -124,7 +124,15 @@ class DeviceRegistrationController extends Controller
      * Body: {
      *   "status": "online",
      *   "battery_level": 85,
-     *   "wifi_strength": -45
+     *   "wifi_strength": -45,
+     *   "screen_on": true,
+     *   "storage_available_mb": 15360,
+     *   "storage_total_mb": 32768,
+     *   "ram_usage_mb": 2048,
+     *   "ram_total_mb": 4096,
+     *   "cpu_temp": 42.5,
+     *   "network_type": "WiFi",
+     *   "current_url": "https://kiosk.mugshot.dev/display/abc123"
      * }
      */
     public function heartbeat(Request $request)
@@ -149,13 +157,45 @@ class DeviceRegistrationController extends Controller
             ], 404);
         }
 
-        // Update last seen and status
-        $remote->update([
+        // Update last seen and status with all health metrics
+        $updateData = [
             'last_seen_at' => now(),
             'status' => 'Connected',
-            'battery_level' => $request->battery_level,
-            'wifi_strength' => $request->wifi_strength,
-        ]);
+        ];
+
+        // Optional fields - only update if provided
+        if ($request->has('battery_level')) {
+            $updateData['battery_level'] = $request->battery_level;
+        }
+        if ($request->has('wifi_strength')) {
+            $updateData['wifi_strength'] = $request->wifi_strength;
+        }
+        if ($request->has('screen_on')) {
+            $updateData['screen_on'] = $request->boolean('screen_on');
+        }
+        if ($request->has('storage_available_mb')) {
+            $updateData['storage_available_mb'] = $request->storage_available_mb;
+        }
+        if ($request->has('storage_total_mb')) {
+            $updateData['storage_total_mb'] = $request->storage_total_mb;
+        }
+        if ($request->has('ram_usage_mb')) {
+            $updateData['ram_usage_mb'] = $request->ram_usage_mb;
+        }
+        if ($request->has('ram_total_mb')) {
+            $updateData['ram_total_mb'] = $request->ram_total_mb;
+        }
+        if ($request->has('cpu_temp')) {
+            $updateData['cpu_temp'] = $request->cpu_temp;
+        }
+        if ($request->has('network_type')) {
+            $updateData['network_type'] = $request->network_type;
+        }
+        if ($request->has('current_url')) {
+            $updateData['current_url'] = $request->current_url;
+        }
+
+        $remote->update($updateData);
 
         return response()->json([
             'success' => true,
@@ -208,6 +248,59 @@ class DeviceRegistrationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Device unregistered successfully'
+        ]);
+    }
+
+    /**
+     * Get list of available displays for APK selection
+     * Called by APK Settings screen to populate display dropdown
+     * 
+     * GET /api/displays?search=...&per_page=50
+     * Returns: {
+     *   "data": [
+     *     {"id": 1, "name": "Depan Perpustakaan", "token": "abc123", "created_at": "2026-01-31..."},
+     *     ...
+     *   ],
+     *   "total": 10
+     * }
+     */
+    public function getDisplays(Request $request)
+    {
+        $perPage = $request->input('per_page', 50);
+        $search = $request->input('search');
+
+        $query = \App\Models\Display::query();
+
+        // Apply search filter if provided
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('token', 'like', "%{$search}%");
+            });
+        }
+
+        // Order by name ascending
+        $query->orderBy('name', 'asc');
+
+        // Paginate results
+        $displays = $query->paginate($perPage);
+
+        // Transform to simple format for APK
+        $data = $displays->map(function($display) {
+            return [
+                'id' => $display->id,
+                'name' => $display->name,
+                'token' => $display->token,
+                'created_at' => $display->created_at?->toIso8601String(),
+            ];
+        });
+
+        return response()->json([
+            'data' => $data,
+            'total' => $displays->total(),
+            'per_page' => $displays->perPage(),
+            'current_page' => $displays->currentPage(),
+            'last_page' => $displays->lastPage(),
         ]);
     }
 }

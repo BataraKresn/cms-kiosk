@@ -124,3 +124,6 @@ Route::post('/devices/heartbeat', [DeviceRegistrationController::class, 'heartbe
 
 // Unregister device (on APK uninstall or reset)
 Route::delete('/devices/unregister', [DeviceRegistrationController::class, 'unregister']);
+
+// Get list of available displays (for APK display selection)
+Route::get('/displays', [DeviceRegistrationController::class, 'getDisplays']);
