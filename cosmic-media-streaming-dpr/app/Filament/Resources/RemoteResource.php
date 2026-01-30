@@ -82,14 +82,6 @@ class RemoteResource extends Resource
                             ->label('Last Seen')
                             ->disabled(),
                     ])->columns(3),
-                
-                Forms\Components\Section::make('Legacy Settings')
-                    ->schema([
-                        Forms\Components\TextInput::make('url')
-                            ->label('Legacy VNC URL')
-                            ->url()
-                            ->helperText('Old VNC connection URL (deprecated)'),
-                    ])->collapsed(),
             ]);
     }
 
@@ -126,18 +118,20 @@ class RemoteResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('battery_level')
                     ->label('Battery')
-                    ->suffix('%')
+                    ->formatStateUsing(fn ($state) => $state ? $state . '%' : '-')
                     ->color(fn ($state) => match(true) {
+                        !$state => 'gray',
                         $state >= 80 => 'success',
                         $state >= 50 => 'warning',
                         $state >= 20 => 'danger',
                         default => 'gray'
                     })
                     ->icon(fn ($state) => match(true) {
+                        !$state => 'heroicon-o-battery-0',
                         $state >= 80 => 'heroicon-o-battery-100',
                         $state >= 50 => 'heroicon-o-battery-50',
                         default => 'heroicon-o-battery-0'
-                    }),
+                    }),  
                 Tables\Columns\TextColumn::make('wifi_strength')
                     ->label('WiFi')
                     ->formatStateUsing(fn ($state) => $state ? "$state dBm" : 'N/A')

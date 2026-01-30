@@ -29,8 +29,8 @@ return new class extends Migration
                 ->comment('Total RAM in MB');
             
             // CPU & Temperature
-            $table->decimal('cpu_temp', 5, 2)->nullable()->after('ram_total_mb')
-                ->comment('CPU temperature in Celsius');
+            $table->decimal('cpu_temp', 6, 2)->nullable()->after('ram_total_mb')
+                ->comment('CPU temperature in Celsius (max 9999.99)');
             
             // Network
             $table->string('network_type', 20)->nullable()->after('cpu_temp')
