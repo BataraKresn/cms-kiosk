@@ -125,7 +125,15 @@ class LayoutService
         try {
             // Check MinIO first (primary storage)
             if (Storage::disk('minio')->exists($mediaPath)) {
-                $imageUrl = Storage::disk('minio')->url($mediaPath);
+                $rawUrl = Storage::disk('minio')->url($mediaPath);
+                // URL encode the filename part to handle spaces and special characters
+                $parts = parse_url($rawUrl);
+                $pathSegments = explode('/', $parts['path']);
+                $filename = array_pop($pathSegments);
+                $encodedFilename = rawurlencode($filename);
+                $pathSegments[] = $encodedFilename;
+                $parts['path'] = implode('/', $pathSegments);
+                $imageUrl = $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
             } elseif (Storage::disk('public')->exists($mediaPath)) {
                 // Fallback to public storage for legacy files
                 $pathInfo = pathinfo($mediaPath);
@@ -222,7 +230,18 @@ class LayoutService
     private static function getVideoUrlFromMinIO($mediaPath)
     {
         $storage = Storage::disk('minio');
-        return $storage->exists($mediaPath) ? $storage->url($mediaPath) : null;
+        if ($storage->exists($mediaPath)) {
+            $url = $storage->url($mediaPath);
+            // URL encode the filename part to handle spaces and special characters
+            $parts = parse_url($url);
+            $pathSegments = explode('/', $parts['path']);
+            $filename = array_pop($pathSegments);
+            $encodedFilename = rawurlencode($filename);
+            $pathSegments[] = $encodedFilename;
+            $parts['path'] = implode('/', $pathSegments);
+            return $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
+        }
+        return null;
     }
 
 
@@ -269,10 +288,23 @@ class LayoutService
         $mediaPath = $spot->media->mediable->path;
 
         // Check MinIO first, fallback to public storage
-        $iframeUrl = Storage::disk('minio')->exists($mediaPath) ?
+        $rawUrl = Storage::disk('minio')->exists($mediaPath) ?
             Storage::disk('minio')->url($mediaPath) : (Storage::disk('public')->exists($mediaPath) ?
                 Storage::disk('public')->url($mediaPath) :
                 null);
+        
+        // URL encode the filename part to handle spaces and special characters
+        if ($rawUrl) {
+            $parts = parse_url($rawUrl);
+            $pathSegments = explode('/', $parts['path']);
+            $filename = array_pop($pathSegments);
+            $encodedFilename = rawurlencode($filename);
+            $pathSegments[] = $encodedFilename;
+            $parts['path'] = implode('/', $pathSegments);
+            $iframeUrl = $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
+        } else {
+            $iframeUrl = null;
+        }
 
         // Return the iframe HTML if URL exists, else return error message
         return $iframeUrl ? $htmlTemplateStart . $iframeUrl . $htmlTemplateEnd : '<p>Content not available.</p>';
@@ -323,9 +355,19 @@ class LayoutService
         foreach ($spot->media->mediable->media_slider_contents()->orderBy('sort', 'asc')->get() as $slider) {
             $s_id = $i . $slider->id;
             // Check MinIO first, fallback to public storage
-            $src = Storage::disk('minio')->exists($slider->path) ?
+            $rawSrc = Storage::disk('minio')->exists($slider->path) ?
                 Storage::disk('minio')->url($slider->path) :
                 Storage::disk('public')->url($slider->path);
+            
+            // URL encode the filename part to handle spaces and special characters
+            $parts = parse_url($rawSrc);
+            $pathSegments = explode('/', $parts['path']);
+            $filename = array_pop($pathSegments);
+            $encodedFilename = rawurlencode($filename);
+            $pathSegments[] = $encodedFilename;
+            $parts['path'] = implode('/', $pathSegments);
+            $src = $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
+            
             $autoplay = $slider->duration ? $slider->duration * 1000 : 1000;
 
             switch ($slider->mime) {
