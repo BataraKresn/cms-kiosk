@@ -279,11 +279,9 @@ class LayoutService
 
     public static function getHtml($spot)
     {
-        // Define the HTML template for the iframe
-        $htmlTemplateStart = '<div style="width:100%;height:100%;"><iframe width="100%" height="100%" src="';
-        $htmlTemplateEnd = '" style="border:0;padding:0;margin:0;" loading="lazy" frameborder="0"
-    allow="accelerometer; autoplay;" fetchpriority="high"></iframe></div>';
-
+        // Generate unique container ID for this spot
+        $containerId = 'html-lazy-' . $spot->id;
+        
         // Generate the path for the media
         $mediaPath = $spot->media->mediable->path;
 
@@ -306,8 +304,39 @@ class LayoutService
             $iframeUrl = null;
         }
 
-        // Return the iframe HTML if URL exists, else return error message
-        return $iframeUrl ? $htmlTemplateStart . $iframeUrl . $htmlTemplateEnd : '<p>Content not available.</p>';
+        // Return lazy-loaded iframe to prevent blocking page load
+        if ($iframeUrl) {
+            return '<div id="' . $containerId . '" style="width:100%;height:100%;" data-lazy-iframe="' . htmlspecialchars($iframeUrl) . '">
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">Loading...</div>
+            </div>
+            <script>
+            (function() {
+                var container = document.getElementById("' . $containerId . '");
+                var iframeUrl = container.getAttribute("data-lazy-iframe");
+                
+                // Lazy load iframe after page load with 3s delay
+                window.addEventListener("load", function() {
+                    setTimeout(function() {
+                        if (container && iframeUrl) {
+                            var iframe = document.createElement("iframe");
+                            iframe.src = iframeUrl;
+                            iframe.style.width = "100%";
+                            iframe.style.height = "100%";
+                            iframe.style.border = "none";
+                            iframe.loading = "lazy";
+                            iframe.setAttribute("frameborder", "0");
+                            iframe.setAttribute("allow", "accelerometer; autoplay;");
+                            container.innerHTML = "";
+                            container.appendChild(iframe);
+                            console.log("HTML iframe lazy loaded: " + iframeUrl);
+                        }
+                    }, 3000);
+                });
+            })();
+            </script>';
+        }
+        
+        return '<p>Content not available.</p>';
     }
 
 
