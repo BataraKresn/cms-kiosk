@@ -16,15 +16,13 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('demo:cron')
-        //     ->everyMinute();
-        
-        // Add your scheduled tasks here
-        // Example: Auto-disconnect devices that haven't sent heartbeat in 2 minutes
-        // $schedule->call(function () {
-        //     \App\Models\Remote::where('last_seen_at', '<', now()->subMinutes(2))
-        //         ->update(['status' => 'Disconnected']);
-        // })->everyMinute();
+        // Auto-disconnect devices that haven't sent heartbeat in 2 minutes
+        // This provides a grace period to prevent status flapping
+        $schedule->call(function () {
+            \App\Models\Remote::where('status', 'Connected')
+                ->where('last_seen_at', '<', now()->subMinutes(2))
+                ->update(['status' => 'Disconnected']);
+        })->everyMinute()->name('auto-disconnect-inactive-devices');
     }
     /**
      * Register the commands for the application.
