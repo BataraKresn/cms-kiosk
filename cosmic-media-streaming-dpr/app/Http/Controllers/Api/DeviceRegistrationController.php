@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class DeviceRegistrationController extends Controller
 {
@@ -233,6 +234,11 @@ class DeviceRegistrationController extends Controller
         $sql .= " WHERE id = " . $remote->id;
         
         DB::connection()->getPdo()->exec($sql);
+        
+        // Clear device cache to ensure UI shows updated status
+        Cache::forget('device_token_' . $token);
+        Cache::forget('device_rc_status_' . $remote->id);
+        Cache::tags(['device_status'])->flush();
 
 // Cache remote_control_enabled status to reduce response time
         $statusCacheKey = 'device_rc_status_' . $remote->id;

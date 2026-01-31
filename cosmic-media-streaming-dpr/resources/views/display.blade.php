@@ -71,33 +71,44 @@
         }
 
         function loadSlider(slideContainer, content) {
+            // Get autoplay delay from slider duration (default 10 seconds if not set)
+            const autoplayDelay = content.content_options.duration ? content.content_options.duration * 1000 : 10000;
+            
             sliderContainer[content.content_options.id] = new Swiper('#' + content.content_options.id, {
                 'effect': content.content_options.effect,
                 'sliderPerView': 1,
                 'spaceBetween': 0,
                 'autoplay': {
+                    'delay': autoplayDelay,
                     'disableOnInteraction': false
                 },
                 'slidesPerView': 'auto',
                 'centeredSlides': true,
                 'mousewheel': true,
                 'keyboard': true,
+                'loop': true, // Enable loop for seamless playback
                 'on': {
                     'slideChange': function() {
                         let activeIndex = this.activeIndex;
                         let slide = this.slides[activeIndex];
-                        if (slide.getAttribute('data-slider-type') == 'slider-video') {
-                            this.player = videojs(slide.getAttribute('data-video-id'));
-                            this.player.currentTime(0);
-                            this.player.play();
+                        if (slide && slide.getAttribute('data-slider-type') == 'slider-video') {
+                            let videoId = slide.getAttribute('data-video-id');
+                            if (videoId && videojs.getPlayer(videoId)) {
+                                this.player = videojs(videoId);
+                                this.player.currentTime(0);
+                                this.player.play();
+                            }
                         }
                     },
-                    'beforeSideChangeStart': function() {
-                        let activeIndex = this.activeIndex;
+                    'slidePrevTransitionStart': function() {
+                        let activeIndex = this.previousIndex;
                         let slide = this.slides[activeIndex];
-                        if (slide.getAttribute('data-slider-type') == 'slider-video') {
-                            this.player = videojs(slide.getAttribute('data-video-id'));
-                            this.player.pause();
+                        if (slide && slide.getAttribute('data-slider-type') == 'slider-video') {
+                            let videoId = slide.getAttribute('data-video-id');
+                            if (videoId && videojs.getPlayer(videoId)) {
+                                this.player = videojs(videoId);
+                                this.player.pause();
+                            }
                         }
                     }
                 }
@@ -117,7 +128,12 @@
                     for (const layout of playlist.layouts) {
                         if (currentTime >= layout.start_time && currentTime <= layout.end_time) {
                             const displayId = layout.id + '___' + layout.name;
-                            if (currentDisplay === displayId) break;
+                            
+                            // CRITICAL FIX: Only rebuild if layout actually changed
+                            // Prevents video restart every 10 seconds
+                            if (currentDisplay === displayId) {
+                                return; // Same layout, do nothing
+                            }
 
                             content = JSON.parse(layout.content);
 
@@ -130,6 +146,7 @@
                                     }
                                 }
                             } else {
+                                // Layout changed - rebuild grid
                                 grid.destroy(true);
                                 $('body').prepend('<div class="grid-stack"></div>');
                                 grid = GridStack.init(content);
@@ -147,7 +164,7 @@
                                 if (currentRunningText === null) {
                                     loadRunningText(content);
                                     currentRunningText = content.running_text.id;
-                                    continue;
+                                    return;
                                 }
 
                                 if (currentRunningText !== content.running_text.id) {
@@ -155,6 +172,8 @@
                                     currentRunningText = content.running_text.id;
                                 }
                             }
+                            
+                            return; // Found active layout, exit loop
                         }
                     }
                 }
@@ -171,9 +190,9 @@
 
         displayScreen(data);
 
-        setInterval(() => {
-            displayScreen(data);
-        }, 10000);
+        // REMOVED: setInterval polling - causes unnecessary DOM checks
+        // Schedule changes will be pushed via WebSocket/Echo
+        // If WebSocket not available, manual refresh required (5 taps top-right corner on APK)
 
         autoScaleViewport();
 
@@ -195,7 +214,8 @@
     </script>
 
     <script>
-    // Lazy load HTML iframes after page load to prevent blocking
+    // OPTIMIZED: Lazy load HTML iframes after videos start playing
+    // Extended delay from 3s to 10s to ensure videos load first
     window.addEventListener('load', function() {
         setTimeout(function() {
             var containers = document.querySelectorAll('.lazy-iframe-container');
@@ -212,10 +232,9 @@
                     iframe.setAttribute('allow', 'accelerometer; autoplay;');
                     container.innerHTML = '';
                     container.appendChild(iframe);
-                    console.log('HTML iframe lazy loaded:', iframeUrl);
                 }
             });
-        }, 3000); // 3s delay to prioritize video playback
+        }, 10000); // 10s delay - prioritize video/image content
     });
     </script>
 

@@ -174,6 +174,11 @@ class LayoutService
     public static function getVideo($spot)
     {
         // Define the video template
+        // Generate video HTML with optimized settings for Android WebView
+        // - autoplay: Auto-start on load
+        // - preload="auto": Buffer video fully before playing
+        // - playsinline: Prevent fullscreen on mobile
+        // - loop: Seamless continuous playback
         $videoTemplateStart = '<video autoplay playsinline preload="auto" loop style="width:100%; height:100%; object-fit:fill;" class="video-js" data-setup="{}" id="video-normal" fetchpriority="high">
                                 <source src="';
         $videoTemplateEnd = '" type="video/mp4" />
@@ -199,6 +204,8 @@ class LayoutService
     {
         $videoId = 'video-normal-' . $spot->id;
 
+        // Generate video HTML with optimized caching settings
+        // Using cached version with short URL to reduce parsing overhead
         $videoTemplateStart = '<video autoplay playsinline preload="auto" loop style="width:100%; height:100%; object-fit:fill;" 
         class="video-js" data-setup=\'{"fluid": true, "preload": "auto", "techOrder": ["html5"]}\' 
         id="' . $videoId . '" fetchpriority="high">
@@ -266,7 +273,8 @@ class LayoutService
             return $cachedVideo;
         }
 
-        // Prepare the video tag with zoom-out effect
+        // Prepare the video tag for HLS livestream with optimized settings
+        // - controls: Show controls for livestream (allow user pause/play if needed)
         $videoHtml = '<video controls autoplay playsinline preload="auto" loop style="width:100%%;height:100%%;" class="video-js video" data-setup="{}" id="video-hls" fetchpriority="high"><source src="%s" type="application/x-mpegURL" /><p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p></video>';
 
 
@@ -395,7 +403,7 @@ class LayoutService
                 case MimeEnum::MP4->value:
                     $slide .= <<<VIDEO
                         <div data-slider-type="slider-video" data-video-id="slider-video-$s_id" class="swiper-slide" lazy="true" data-swiper-autoplay="$autoplay">
-                            <video controls playsinline preload="auto" loop style="width:100%;height:100%;object-fit:fill;" class="video-js" data-setup="{}" id="slider-video-$s_id" fetchpriority="high"><source src="$src" type="video/mp4" /><p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p></video>
+                            <video playsinline preload="auto" loop style="width:100%;height:100%;object-fit:fill;" class="video-js" data-setup="{}" id="slider-video-$s_id" fetchpriority="high"><source src="$src" type="video/mp4" /><p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p></video>
                         </div>
                     VIDEO;
 

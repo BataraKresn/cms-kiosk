@@ -10,6 +10,20 @@ body {
     padding: 0;
 }
 
+/* PERFORMANCE: Prevent layout shift during load */
+video, img, iframe {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* PERFORMANCE: Hardware acceleration for smooth playback */
+video {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+}
+
 /* handle grid */
 .grid-stack-item-content { 
     background-color: #fff; margin: 0; overflow:auto hidden !important; 
