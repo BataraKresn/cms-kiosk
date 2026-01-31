@@ -194,11 +194,15 @@
         }
     </script>
 
+    {{-- Pusher/Echo disabled - Uncomment when websocket server is configured
     @if(isset($display) && $display->token)
     <script type="module">
-        window.Echo.channel(`App.Models.Display.{{ $display->token }}`)
-            .listen('DisplayReloadEvent', (e) => {
-                window.location.reload();
-            });
+        if (window.Echo) {
+            window.Echo.channel(`App.Models.Display.{{ $display->token }}`)
+                .listen('DisplayReloadEvent', (e) => {
+                    window.location.reload();
+                });
+        }
     </script>
     @endif
+    --}}
