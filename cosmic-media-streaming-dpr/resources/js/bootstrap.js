@@ -15,14 +15,15 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
  * allows your team to easily build robust real-time web applications.
  */
 
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+window.Pusher = Pusher;
+
 // Only initialize Echo if Pusher key is configured
 const pusherKey = import.meta.env.VITE_PUSHER_APP_KEY;
 
 if (pusherKey && pusherKey.trim() !== '' && pusherKey !== 'undefined') {
-    import Echo from 'laravel-echo';
-    import Pusher from 'pusher-js';
-    window.Pusher = Pusher;
-
     window.Echo = new Echo({
         broadcaster: 'pusher',
         key: pusherKey,
@@ -37,4 +38,6 @@ if (pusherKey && pusherKey.trim() !== '' && pusherKey !== 'undefined') {
     console.log('Laravel Echo initialized with Pusher');
 } else {
     console.log('Pusher key not configured - Echo disabled');
+    // Set window.Echo to null to prevent undefined errors
+    window.Echo = null;
 }
