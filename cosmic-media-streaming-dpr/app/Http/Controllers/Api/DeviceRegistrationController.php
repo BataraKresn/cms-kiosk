@@ -234,10 +234,16 @@ class DeviceRegistrationController extends Controller
         
         DB::connection()->getPdo()->exec($sql);
 
+// Cache remote_control_enabled status to reduce response time
+        $statusCacheKey = 'device_rc_status_' . $remote->id;
+        $remoteControlEnabled = Cache::remember($statusCacheKey, 30, function() use ($remote) {
+            return (bool) Remote::where('id', $remote->id)->value('remote_control_enabled');
+        });
+        
         return response()->json([
             'success' => true,
             'data' => [
-                'remote_control_enabled' => (bool) $remote->remote_control_enabled,
+                'remote_control_enabled' => $remoteControlEnabled,
                 'should_reconnect' => false,
             ]
         ]);

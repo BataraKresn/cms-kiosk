@@ -19,7 +19,8 @@ class DisplayController extends Controller
         // Cache display data for 5 minutes to reduce database load
         $cacheKey = 'display_content_' . $token;
         
-        $cachedData = Cache::remember($cacheKey, 300, function() use ($token) {
+        // Extended cache to 10 minutes with tags for smart invalidation
+        $cachedData = Cache::tags(['display', 'display_' . $token])->remember($cacheKey, 600, function() use ($token) {
             // Optimize query with eager loading to prevent N+1 queries
             $display = Display::select('id', 'token', 'schedule_id', 'screen_id')
                 ->whereToken($token)

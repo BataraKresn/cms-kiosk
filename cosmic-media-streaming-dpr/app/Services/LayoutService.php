@@ -33,8 +33,9 @@ class LayoutService
     public static function clearCache(Layout $layout): void
     {
         Cache::forget("layout_{$layout->id}_content_true");
-        Cache::forget("layout_{$layout->id}_content_false");
-    }
+        Cache::forget("layout_{$layout->id}_content_false");        
+        // Clear all display caches that might use this layout
+        Cache::tags(['display'])->flush();    }
 
     public static function getContent($spot)
     {
