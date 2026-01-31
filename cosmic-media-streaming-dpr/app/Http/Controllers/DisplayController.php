@@ -10,46 +10,59 @@ use App\Services\LayoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class DisplayController extends Controller
 {
     public function show($token)
     {
-        // Optimize query with eager loading to prevent N+1 queries
-        $display = Display::select('id', 'token', 'schedule_id', 'screen_id')
-            ->whereToken($token)
-            ->with([
-                'schedule:id,name',
-                'schedule.schedule_playlists:schedule_id,start_day,end_day,playlist_id',
-                'schedule.schedule_playlists.playlists.playlist_layouts:id,playlist_id,layout_id,start_time,end_time',
-                'schedule.schedule_playlists.playlists.playlist_layouts.layout:id,name,screen_id',
-                'schedule.schedule_playlists.playlists.playlist_layouts.layout.screen:id,mode,width,height,column,row',
-                'schedule.schedule_playlists.playlists.playlist_layouts.layout.spots:layout_id,id,media_id,x,y,w,h',
-                'screen:id,mode,width,height,column,row',
-            ])
-            ->firstOrFail();
+        // Cache display data for 5 minutes to reduce database load
+        $cacheKey = 'display_content_' . $token;
+        
+        $cachedData = Cache::remember($cacheKey, 300, function() use ($token) {
+            // Optimize query with eager loading to prevent N+1 queries
+            $display = Display::select('id', 'token', 'schedule_id', 'screen_id')
+                ->whereToken($token)
+                ->with([
+                    'schedule:id,name',
+                    'schedule.schedule_playlists:schedule_id,start_day,end_day,playlist_id',
+                    'schedule.schedule_playlists.playlists.playlist_layouts:id,playlist_id,layout_id,start_time,end_time',
+                    'schedule.schedule_playlists.playlists.playlist_layouts.layout:id,name,screen_id',
+                    'schedule.schedule_playlists.playlists.playlist_layouts.layout.screen:id,mode,width,height,column,row',
+                    'schedule.schedule_playlists.playlists.playlist_layouts.layout.spots:layout_id,id,media_id,x,y,w,h',
+                    'screen:id,mode,width,height,column,row',
+                ])
+                ->firstOrFail();
 
-        $data['data']['id'] = $display->schedule->id;
-        $data['data']['name'] = $display->schedule->name;
+            $data['data']['id'] = $display->schedule->id;
+            $data['data']['name'] = $display->schedule->name;
 
-        foreach ($display->schedule->schedule_playlists as $i => $row) {
-            $data['data']['playlists'][$i] = $row->only('start_day', 'end_day', 'schedule_id', 'playlist_id');
-            foreach ($row->playlists as $playlist) {
-                foreach ($playlist->playlist_layouts as $play) {
-                    $data['data']['playlists'][$i]['layouts'][] = [
-                        'id' => $play->id,
-                        'name' => $play->layout->name,
-                        'start_time' => $play->start_time,
-                        'end_time' => $play->end_time,
-                        'content' => json_encode(LayoutService::build($play->layout, true)),
-                    ];
+            foreach ($display->schedule->schedule_playlists as $i => $row) {
+                $data['data']['playlists'][$i] = $row->only('start_day', 'end_day', 'schedule_id', 'playlist_id');
+                foreach ($row->playlists as $playlist) {
+                    foreach ($playlist->playlist_layouts as $play) {
+                        $data['data']['playlists'][$i]['layouts'][] = [
+                            'id' => $play->id,
+                            'name' => $play->layout->name,
+                            'start_time' => $play->start_time,
+                            'end_time' => $play->end_time,
+                            'content' => json_encode(LayoutService::build($play->layout, true)),
+                        ];
+                    }
                 }
             }
-        }
 
-        $screen_aspect = $display->screen->mode === ScreenModeEnum::PORTRAIT->value ? $display->screen->height : $display->screen->width;
+            $screen_aspect = $display->screen->mode === ScreenModeEnum::PORTRAIT->value ? $display->screen->height : $display->screen->width;
 
-        return view('display', compact('data', 'display', 'screen_aspect', 'token'));
+            return [
+                'data' => $data,
+                'display' => $display,
+                'screen_aspect' => $screen_aspect,
+                'token' => $display->token
+            ];
+        });
+
+        return view('display', $cachedData);
     }
 
     public function refreshDisplaysByVideo(Request $request)

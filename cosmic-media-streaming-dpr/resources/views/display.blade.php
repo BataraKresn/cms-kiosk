@@ -194,6 +194,31 @@
         }
     </script>
 
+    <script>
+    // Lazy load HTML iframes after page load to prevent blocking
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            var containers = document.querySelectorAll('.lazy-iframe-container');
+            containers.forEach(function(container) {
+                var iframeUrl = container.getAttribute('data-lazy-iframe');
+                if (iframeUrl) {
+                    var iframe = document.createElement('iframe');
+                    iframe.src = iframeUrl;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
+                    iframe.loading = 'lazy';
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('allow', 'accelerometer; autoplay;');
+                    container.innerHTML = '';
+                    container.appendChild(iframe);
+                    console.log('HTML iframe lazy loaded:', iframeUrl);
+                }
+            });
+        }, 3000); // 3s delay to prioritize video playback
+    });
+    </script>
+
     {{-- Pusher/Echo disabled - Uncomment when websocket server is configured
     @if(isset($display) && $display->token)
     <script type="module">

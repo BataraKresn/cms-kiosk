@@ -158,17 +158,11 @@ class DeviceRegistrationController extends Controller
             ], 404);
         }
 
-        // Update last seen and status with all health metrics
+        // Build update data array
         $updateData = [
             'last_seen_at' => now(),
             'status' => 'Connected',
         ];
-
-        Log::info('Heartbeat received', [
-            'remote_id' => $remote->id,
-            'current_status' => $remote->status,
-            'will_update_to' => 'Connected'
-        ]);
 
         // Optional fields - only update if provided
         if ($request->has('battery_level')) {
@@ -202,31 +196,43 @@ class DeviceRegistrationController extends Controller
             $updateData['current_url'] = $request->current_url;
         }
 
-        // Force write connection and raw SQL to ensure status update works
-        $affected = DB::connection()->getPdo()->exec(
-            "UPDATE remotes SET 
-                status = 'Connected',
-                last_seen_at = NOW()" .
-                (isset($updateData['battery_level']) ? ", battery_level = " . (int)$updateData['battery_level'] : "") .
-                (isset($updateData['wifi_strength']) ? ", wifi_strength = " . (int)$updateData['wifi_strength'] : "") .
-                (isset($updateData['screen_on']) ? ", screen_on = " . ($updateData['screen_on'] ? 1 : 0) : "") .
-                (isset($updateData['storage_available_mb']) ? ", storage_available_mb = " . (int)$updateData['storage_available_mb'] : "") .
-                (isset($updateData['storage_total_mb']) ? ", storage_total_mb = " . (int)$updateData['storage_total_mb'] : "") .
-                (isset($updateData['ram_usage_mb']) ? ", ram_usage_mb = " . (int)$updateData['ram_usage_mb'] : "") .
-                (isset($updateData['ram_total_mb']) ? ", ram_total_mb = " . (int)$updateData['ram_total_mb'] : "") .
-                (isset($updateData['cpu_temp']) ? ", cpu_temp = " . (float)$updateData['cpu_temp'] : "") .
-                (isset($updateData['network_type']) ? ", network_type = '" . addslashes($updateData['network_type']) . "'" : "") .
-                (isset($updateData['current_url']) ? ", current_url = '" . addslashes($updateData['current_url']) . "'" : "") .
-            " WHERE id = " . $remote->id
-        );
-
-        Log::info('Heartbeat updated via raw SQL', [
-            'remote_id' => $remote->id,
-            'affected_rows' => $affected
-        ]);
-
-        // Refresh model to get latest data
-        $remote = $remote->fresh();
+        // Use raw SQL for maximum performance (no Eloquent overhead)
+        $sql = "UPDATE remotes SET status = 'Connected', last_seen_at = NOW()";
+        
+        if (isset($updateData['battery_level'])) {
+            $sql .= ", battery_level = " . (int)$updateData['battery_level'];
+        }
+        if (isset($updateData['wifi_strength'])) {
+            $sql .= ", wifi_strength = " . (int)$updateData['wifi_strength'];
+        }
+        if (isset($updateData['screen_on'])) {
+            $sql .= ", screen_on = " . ($updateData['screen_on'] ? 1 : 0);
+        }
+        if (isset($updateData['storage_available_mb'])) {
+            $sql .= ", storage_available_mb = " . (int)$updateData['storage_available_mb'];
+        }
+        if (isset($updateData['storage_total_mb'])) {
+            $sql .= ", storage_total_mb = " . (int)$updateData['storage_total_mb'];
+        }
+        if (isset($updateData['ram_usage_mb'])) {
+            $sql .= ", ram_usage_mb = " . (int)$updateData['ram_usage_mb'];
+        }
+        if (isset($updateData['ram_total_mb'])) {
+            $sql .= ", ram_total_mb = " . (int)$updateData['ram_total_mb'];
+        }
+        if (isset($updateData['cpu_temp'])) {
+            $sql .= ", cpu_temp = " . (float)$updateData['cpu_temp'];
+        }
+        if (isset($updateData['network_type'])) {
+            $sql .= ", network_type = '" . addslashes($updateData['network_type']) . "'";
+        }
+        if (isset($updateData['current_url'])) {
+            $sql .= ", current_url = '" . addslashes($updateData['current_url']) . "'";
+        }
+        
+        $sql .= " WHERE id = " . $remote->id;
+        
+        DB::connection()->getPdo()->exec($sql);
 
         return response()->json([
             'success' => true,

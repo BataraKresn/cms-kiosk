@@ -1,6 +1,7 @@
 # Android Application (separate repository)
 kiosk-touchscreen-dpr-app/
 kiosk-touchscreen-app/
+kiosk-touchscreen-app
 
 # Remote Control Application (separate repository)
 # remote-control-poc/
