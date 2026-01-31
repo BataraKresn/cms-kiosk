@@ -18,8 +18,10 @@ class Kernel extends ConsoleKernel
     {
         // Auto-disconnect devices that haven't sent heartbeat in 2 minutes
         // This provides a grace period to prevent status flapping
+        // Using DB::table to ensure the update actually works
         $schedule->call(function () {
-            \App\Models\Remote::where('status', 'Connected')
+            \Illuminate\Support\Facades\DB::table('remotes')
+                ->where('status', 'Connected')
                 ->where('last_seen_at', '<', now()->subMinutes(2))
                 ->update(['status' => 'Disconnected']);
         })->everyMinute()->name('auto-disconnect-inactive-devices');
