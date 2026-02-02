@@ -36,6 +36,20 @@ class Remote extends Model
         'current_url',
         'last_crash_log',
         'last_crash_at',
+        // Heartbeat management fields
+        'heartbeat_interval_seconds',
+        'grace_period_seconds',
+        'should_reconnect',
+        'reconnect_delay_seconds',
+        'reconnect_reason',
+        'last_status_change_at',
+        'status_change_reason',
+        'previous_status',
+        'last_heartbeat_received_at',
+        'heartbeat_count_current_minute',
+        'last_heartbeat_source',
+        'last_external_ping_at',
+        'external_ping_status',
     ];
 
     protected $casts = [
@@ -43,5 +57,9 @@ class Remote extends Model
         'last_crash_at' => 'datetime',
         'screen_on' => 'boolean',
         'remote_control_enabled' => 'boolean',
+        'should_reconnect' => 'boolean',
+        'last_status_change_at' => 'datetime',
+        'last_heartbeat_received_at' => 'datetime',
+        'last_external_ping_at' => 'datetime',
     ];
 }

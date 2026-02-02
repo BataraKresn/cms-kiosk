@@ -159,100 +159,73 @@ class DeviceRegistrationController extends Controller
             ], 404);
         }
 
-        // Build update data array
-        $updateData = [
-            'last_seen_at' => now(),
-            'status' => 'Connected',
-        ];
-
-        // Optional fields - only update if provided
+        // Extract device metrics
+        $metrics = [];
         if ($request->has('battery_level')) {
-            $updateData['battery_level'] = $request->battery_level;
+            $metrics['battery_level'] = $request->battery_level;
         }
         if ($request->has('wifi_strength')) {
-            $updateData['wifi_strength'] = $request->wifi_strength;
+            $metrics['wifi_strength'] = $request->wifi_strength;
         }
         if ($request->has('screen_on')) {
-            $updateData['screen_on'] = $request->boolean('screen_on');
+            $metrics['screen_on'] = $request->boolean('screen_on');
         }
         if ($request->has('storage_available_mb')) {
-            $updateData['storage_available_mb'] = $request->storage_available_mb;
+            $metrics['storage_available_mb'] = $request->storage_available_mb;
         }
         if ($request->has('storage_total_mb')) {
-            $updateData['storage_total_mb'] = $request->storage_total_mb;
+            $metrics['storage_total_mb'] = $request->storage_total_mb;
         }
         if ($request->has('ram_usage_mb')) {
-            $updateData['ram_usage_mb'] = $request->ram_usage_mb;
+            $metrics['ram_usage_mb'] = $request->ram_usage_mb;
         }
         if ($request->has('ram_total_mb')) {
-            $updateData['ram_total_mb'] = $request->ram_total_mb;
+            $metrics['ram_total_mb'] = $request->ram_total_mb;
         }
         if ($request->has('cpu_temp')) {
-            $updateData['cpu_temp'] = $request->cpu_temp;
+            $metrics['cpu_temp'] = $request->cpu_temp;
         }
         if ($request->has('network_type')) {
-            $updateData['network_type'] = $request->network_type;
+            $metrics['network_type'] = $request->network_type;
         }
         if ($request->has('current_url')) {
-            $updateData['current_url'] = $request->current_url;
+            $metrics['current_url'] = $request->current_url;
         }
 
-        // Use raw SQL for maximum performance (no Eloquent overhead)
-        $sql = "UPDATE remotes SET status = 'Connected', last_seen_at = NOW()";
-        
-        if (isset($updateData['battery_level'])) {
-            $sql .= ", battery_level = " . (int)$updateData['battery_level'];
+        // Use DeviceHeartbeatService for atomic state management
+        try {
+            $heartbeatService = app(\App\Services\DeviceHeartbeatService::class);
+            $result = $heartbeatService->processHeartbeat($remote, $metrics);
+            
+            Log::info('Heartbeat processed successfully', [
+                'device_id' => $remote->id,
+                'device_name' => $remote->name,
+                'status' => $result['status'],
+                'previous_status' => $result['previous_status'],
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'remote_control_enabled' => $result['remote_control_enabled'],
+                    'should_reconnect' => $result['should_reconnect'],
+                    'reconnect_delay_seconds' => $result['reconnect_delay_seconds'],
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Heartbeat processing failed', [
+                'device_id' => $remote->id,
+                'device_name' => $remote->name,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Heartbeat processing failed',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
-        if (isset($updateData['wifi_strength'])) {
-            $sql .= ", wifi_strength = " . (int)$updateData['wifi_strength'];
-        }
-        if (isset($updateData['screen_on'])) {
-            $sql .= ", screen_on = " . ($updateData['screen_on'] ? 1 : 0);
-        }
-        if (isset($updateData['storage_available_mb'])) {
-            $sql .= ", storage_available_mb = " . (int)$updateData['storage_available_mb'];
-        }
-        if (isset($updateData['storage_total_mb'])) {
-            $sql .= ", storage_total_mb = " . (int)$updateData['storage_total_mb'];
-        }
-        if (isset($updateData['ram_usage_mb'])) {
-            $sql .= ", ram_usage_mb = " . (int)$updateData['ram_usage_mb'];
-        }
-        if (isset($updateData['ram_total_mb'])) {
-            $sql .= ", ram_total_mb = " . (int)$updateData['ram_total_mb'];
-        }
-        if (isset($updateData['cpu_temp'])) {
-            $sql .= ", cpu_temp = " . (float)$updateData['cpu_temp'];
-        }
-        if (isset($updateData['network_type'])) {
-            $sql .= ", network_type = '" . addslashes($updateData['network_type']) . "'";
-        }
-        if (isset($updateData['current_url'])) {
-            $sql .= ", current_url = '" . addslashes($updateData['current_url']) . "'";
-        }
-        
-        $sql .= " WHERE id = " . $remote->id;
-        
-        DB::connection()->getPdo()->exec($sql);
-        
-        // Clear device cache to ensure UI shows updated status
-        Cache::forget('device_token_' . $token);
-        Cache::forget('device_rc_status_' . $remote->id);
-        Cache::tags(['device_status'])->flush();
-
-// Cache remote_control_enabled status to reduce response time
-        $statusCacheKey = 'device_rc_status_' . $remote->id;
-        $remoteControlEnabled = Cache::remember($statusCacheKey, 30, function() use ($remote) {
-            return (bool) Remote::where('id', $remote->id)->value('remote_control_enabled');
-        });
-        
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'remote_control_enabled' => $remoteControlEnabled,
-                'should_reconnect' => false,
-            ]
-        ]);
     }
 
     /**

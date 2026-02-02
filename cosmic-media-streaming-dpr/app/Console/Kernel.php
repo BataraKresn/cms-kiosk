@@ -16,20 +16,18 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule)
     {
-        // Auto-disconnect devices that haven't sent heartbeat in 5 minutes
-        // Extended grace period from 2 to 5 minutes to prevent status flapping
-        // APK sends heartbeat every 30 seconds, so 5 minutes = 10 missed heartbeats
-        $schedule->call(function () {
-            $disconnectedCount = \Illuminate\Support\Facades\DB::table('remotes')
-                ->where('status', 'Connected')
-                ->where('last_seen_at', '<', now()->subMinutes(5))
-                ->update(['status' => 'Disconnected']);
-            
-            if ($disconnectedCount > 0) {
-                // Clear device cache after status update
-                \Illuminate\Support\Facades\Cache::tags(['device_status'])->flush();
-            }
-        })->everyMinute()->name('auto-disconnect-inactive-devices');
+        // REPLACED: Old auto-disconnect logic with new comprehensive device status monitoring
+        // New system uses DeviceHeartbeatService for:
+        // - Atomic state transitions with row-level locking
+        // - Three-tier status: Connected -> Temporarily Offline -> Disconnected
+        // - Grace period enforcement (60s default)
+        // - Structured logging for debugging status flapping
+        // - Coordination with external ping service
+        $schedule->command('devices:monitor-status')
+            ->everyMinute()
+            ->name('device-status-monitor')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
     /**
      * Register the commands for the application.

@@ -120,10 +120,30 @@ Route::get('/network-test', function () {
 Route::post('/devices/register', [DeviceRegistrationController::class, 'register']);
 
 // Device heartbeat to maintain online status (called every 30 seconds)
-Route::post('/devices/heartbeat', [DeviceRegistrationController::class, 'heartbeat']);
+// Rate limited to prevent abuse and cache thrashing
+Route::post('/devices/heartbeat', [DeviceRegistrationController::class, 'heartbeat'])
+    ->middleware('heartbeat.rate');
 
 // Unregister device (on APK uninstall or reset)
 Route::delete('/devices/unregister', [DeviceRegistrationController::class, 'unregister']);
 
 // Get list of available displays (for APK display selection)
 Route::get('/displays', [DeviceRegistrationController::class, 'getDisplays']);
+
+// ============================================================================
+// External Service Admin API Routes (for Python ping service coordination)
+// ============================================================================
+// These endpoints allow external monitoring services to coordinate with CMS
+// Requires authentication to prevent unauthorized access
+use App\Http\Controllers\Api\Admin\ExternalServiceController;
+
+Route::prefix('admin/external-service')->group(function () {
+    // Process single device ping result
+    Route::post('/device/{id}/ping', [ExternalServiceController::class, 'processPing']);
+    
+    // Process batch ping results (more efficient for large deployments)
+    Route::post('/devices/ping-batch', [ExternalServiceController::class, 'processPingBatch']);
+    
+    // Get list of devices that need external ping
+    Route::get('/devices/needs-ping', [ExternalServiceController::class, 'getDevicesNeedingPing']);
+});
