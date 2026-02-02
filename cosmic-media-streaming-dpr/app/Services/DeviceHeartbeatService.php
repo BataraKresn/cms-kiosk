@@ -117,21 +117,17 @@ class DeviceHeartbeatService
                 $updateData['current_url'] = $metrics['current_url'];
             }
             
-            // Reset reconnect flag if device reconnected
-            if ($lockedRemote->should_reconnect) {
-                $updateData['should_reconnect'] = false;
-                $updateData['reconnect_delay_seconds'] = null;
-                $updateData['reconnect_reason'] = null;
-                
-                Log::info('Device reconnected after reconnect request', [
-                    'device_id' => $lockedRemote->id,
-                    'device_name' => $lockedRemote->name,
-                    'previous_reason' => $lockedRemote->reconnect_reason,
-                ]);
+            // Ensure should_reconnect stays true (allow heartbeat by default)
+            // Only set to false if explicitly blocked by admin
+            if (!isset($updateData['should_reconnect'])) {
+                $updateData['should_reconnect'] = true;
             }
             
             // Perform update
             $lockedRemote->update($updateData);
+            
+            // Refresh to get latest values
+            $lockedRemote->refresh();
             
             // Invalidate only THIS device's cache (not global)
             $this->invalidateDeviceCache($lockedRemote);
@@ -139,8 +135,8 @@ class DeviceHeartbeatService
             return [
                 'status' => $newStatus,
                 'previous_status' => $previousStatus,
-                'should_reconnect' => false,
-                'reconnect_delay_seconds' => null,
+                'should_reconnect' => (bool) $lockedRemote->should_reconnect,
+                'reconnect_delay_seconds' => $lockedRemote->reconnect_delay_seconds,
                 'remote_control_enabled' => (bool) $lockedRemote->remote_control_enabled,
             ];
         });

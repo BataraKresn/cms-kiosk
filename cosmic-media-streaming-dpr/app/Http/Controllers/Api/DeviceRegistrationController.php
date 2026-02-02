@@ -96,6 +96,9 @@ class DeviceRegistrationController extends Controller
             'last_seen_at' => now(),
             'remote_control_enabled' => 0, // Disabled by default, admin must enable
             'remote_control_port' => 5555,
+            'should_reconnect' => true, // Allow heartbeat by default
+            'heartbeat_interval_seconds' => 30,
+            'grace_period_seconds' => 300,
         ]);
 
         Log::info('New device registered', [
