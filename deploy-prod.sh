@@ -228,6 +228,15 @@ echo ""
 echo -e "${GREEN}✅ All services built successfully${NC}"
 echo ""
 
+# Clear logs before deployment
+echo -e "${BLUE}🧹 Clearing application logs...${NC}"
+if [ -f "file_sh/clear-logs.sh" ]; then
+    bash file_sh/clear-logs.sh
+else
+    echo -e "${YELLOW}⚠️  clear-logs.sh not found, skipping log cleanup${NC}"
+fi
+echo ""
+
 # Optional: Stop services if requested
 if [ "$STOP_SERVICES" = true ]; then
     echo -e "${YELLOW}🛑 Stopping existing services (--stop flag)...${NC}"
