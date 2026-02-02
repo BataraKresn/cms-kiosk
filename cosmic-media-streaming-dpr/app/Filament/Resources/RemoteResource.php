@@ -190,7 +190,11 @@ class RemoteResource extends Resource
                     ->native(false),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->hidden(fn (Remote $record): bool => $record->trashed()),
+                Tables\Actions\RestoreAction::make()
+                    ->label('Restore')
+                    ->successNotificationTitle('Device restored'),
                 Tables\Actions\DeleteAction::make()
                     ->label('Soft Delete')
                     ->requiresConfirmation()
@@ -208,7 +212,7 @@ class RemoteResource extends Resource
                     ->icon('heroicon-o-tv')
                     ->color('success')
                     ->url(fn (Remote $record): string => route('filament.admin.resources.remotes.remote-control-viewer', ['record' => $record->id]))
-                    ->visible(fn (Remote $record): bool => $record->remote_control_enabled && $record->status === 'Connected')
+                    ->visible(fn (Remote $record): bool => !$record->trashed() && $record->remote_control_enabled && $record->status === 'Connected')
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
