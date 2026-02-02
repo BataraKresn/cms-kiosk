@@ -182,11 +182,27 @@ class RemoteResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-                // Your filters here
+                Tables\Filters\TrashedFilter::make()
+                    ->label('Show Deleted')
+                    ->placeholder('Active Devices')
+                    ->trueLabel('Only Deleted')
+                    ->falseLabel('With Deleted')
+                    ->native(false),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Soft Delete')
+                    ->requiresConfirmation()
+                    ->modalHeading('Soft Delete Device')
+                    ->modalDescription('Device will be hidden but data retained. Device can re-register with same ID.')
+                    ->successNotificationTitle('Device soft deleted'),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->label('Permanent Delete')
+                    ->requiresConfirmation()
+                    ->modalHeading('Permanently Delete Device')
+                    ->modalDescription('This will PERMANENTLY delete the device and all related data. This action cannot be undone!')
+                    ->successNotificationTitle('Device permanently deleted'),
                 Action::make('remoteControl')
                     ->label('Remote Control')
                     ->icon('heroicon-o-tv')
@@ -196,9 +212,17 @@ class RemoteResource extends Resource
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make(),
-                // ]),
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->label('Soft Delete Selected'),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->label('Permanently Delete Selected')
+                        ->requiresConfirmation()
+                        ->modalHeading('Permanently Delete Devices')
+                        ->modalDescription('This will PERMANENTLY delete all selected devices. This cannot be undone!'),
+                    Tables\Actions\RestoreBulkAction::make()
+                        ->label('Restore Selected'),
+                ]),
             ])
             ->emptyStateHeading('No Devices Registered')
             ->emptyStateDescription('Devices will appear here automatically when the Android APK is installed and registers with the system.')
