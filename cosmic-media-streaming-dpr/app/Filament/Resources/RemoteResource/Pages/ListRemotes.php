@@ -30,9 +30,9 @@ class ListRemotes extends ListRecords
             
             'deleted' => Tab::make('Deleted Devices')
                 ->icon('heroicon-o-trash')
-                ->badge(fn () => \App\Models\Remote::whereNotNull('deleted_at')->count())
+                ->badge(fn () => \App\Models\Remote::onlyTrashed()->count())
                 ->badgeColor('danger')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('deleted_at')),
+                ->modifyQueryUsing(fn (Builder $query) => $query->onlyTrashed()),
         ];
     }
 }
