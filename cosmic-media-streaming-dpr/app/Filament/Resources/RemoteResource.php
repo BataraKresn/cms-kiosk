@@ -182,12 +182,7 @@ class RemoteResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->label('Show Deleted')
-                    ->placeholder('Active Devices')
-                    ->trueLabel('Only Deleted')
-                    ->falseLabel('With Deleted')
-                    ->native(false),
+                // TrashedFilter removed - using Tabs instead
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

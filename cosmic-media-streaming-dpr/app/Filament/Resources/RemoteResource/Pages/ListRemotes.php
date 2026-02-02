@@ -23,12 +23,22 @@ class ListRemotes extends ListRecords
     {
         return [
             'active' => Tab::make('Active Devices')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereNull('deleted_at'))
-                ->badge(fn () => \App\Models\Remote::whereNull('deleted_at')->count()),
+                ->icon('heroicon-o-check-circle')
+                ->badge(fn () => \App\Models\Remote::whereNull('deleted_at')->count())
+                ->badgeColor('success')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereNull('deleted_at')),
+            
             'deleted' => Tab::make('Deleted Devices')
-                ->modifyQueryUsing(fn (Builder $query) => $query->onlyTrashed())
-                ->badge(fn () => \App\Models\Remote::onlyTrashed()->count())
-                ->badgeColor('danger'),
+                ->icon('heroicon-o-trash')
+                ->badge(fn () => \App\Models\Remote::whereNotNull('deleted_at')->count())
+                ->badgeColor('danger')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('deleted_at')),
+            
+            'all' => Tab::make('All Devices')
+                ->icon('heroicon-o-folder')
+                ->badge(fn () => \App\Models\Remote::withTrashed()->count())
+                ->badgeColor('gray')
+                ->modifyQueryUsing(fn (Builder $query) => $query->withTrashed()),
         ];
     }
 }
