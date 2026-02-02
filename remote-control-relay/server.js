@@ -26,6 +26,15 @@ const http = require('http');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+// Simple logger wrapper - only logs in development
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const logger = {
+    info: (...args) => !IS_PRODUCTION && console.log(...args),
+    warn: (...args) => console.warn(...args),
+    error: (...args) => console.error(...args),
+    debug: (...args) => !IS_PRODUCTION && console.log(...args)
+};
+
 // Configuration
 const HTTP_PORT = process.env.HTTP_PORT || 3002;
 const WS_PORT = process.env.WS_PORT || 3003;
@@ -75,15 +84,15 @@ async function initDatabase() {
             queueLimit: 0
         });
         
-        console.log('✅ Database connection pool created');
+        logger.info('✅ Database connection pool created');
         
         // Test connection
         const connection = await dbPool.getConnection();
-        console.log('✅ Database connection test successful');
+        logger.info('✅ Database connection test successful');
         connection.release();
         
     } catch (error) {
-        console.error('❌ Database connection failed:', error);
+        logger.error('❌ Database connection failed:', error);
         process.exit(1);
     }
 }
@@ -92,7 +101,7 @@ async function initDatabase() {
  * Handle new WebSocket connection
  */
 wss.on('connection', (ws, req) => {
-    console.log('📱 New WebSocket connection from:', req.socket.remoteAddress);
+    logger.debug('📱 New WebSocket connection from:', req.socket.remoteAddress);
     
     // Initialize client metadata
     clientMetadata.set(ws, {
@@ -105,7 +114,7 @@ wss.on('connection', (ws, req) => {
     // Set connection timeout for authentication
     const authTimeout = setTimeout(() => {
         if (!clientMetadata.get(ws).authenticated) {
-            console.log('⏱️ Authentication timeout, closing connection');
+            logger.warn('⏱️ Authentication timeout, closing connection');
             ws.close(4001, 'Authentication timeout');
         }
     }, 30000); // 30 seconds
@@ -116,7 +125,7 @@ wss.on('connection', (ws, req) => {
             const message = JSON.parse(data.toString());
             await handleMessage(ws, message, authTimeout);
         } catch (error) {
-            console.error('❌ Error handling message:', error);
+            logger.error('❌ Error handling message:', error);
             sendError(ws, 'Invalid message format');
         }
     });
@@ -129,7 +138,7 @@ wss.on('connection', (ws, req) => {
     
     // Handle errors
     ws.on('error', (error) => {
-        console.error('❌ WebSocket error:', error);
+        logger.error('❌ WebSocket error:', error);
     });
 });
 
@@ -171,7 +180,7 @@ async function handleMessage(ws, message, authTimeout) {
             break;
             
         default:
-            console.warn('⚠️ Unknown message type:', type);
+            logger.warn('⚠️ Unknown message type:', type);
     }
 }
 
@@ -260,7 +269,7 @@ async function handleAuthentication(ws, message, authTimeout) {
             deviceId: deviceId
         }));
         
-        console.log(`✅ Authenticated: ${role} for device ${deviceId}`);
+        logger.info(`✅ Authenticated: ${role} for device ${deviceId}`);
         
         // If device, update database status to Connected
         if (role === 'device') {
@@ -272,9 +281,9 @@ async function handleAuthentication(ws, message, authTimeout) {
                      WHERE id = ?`,
                     [dbRecord[0].id]
                 );
-                console.log(`📡 Device ${deviceId} status updated to Connected`);
+                logger.info(`📡 Device ${deviceId} status updated to Connected`);
             } catch (err) {
-                console.error('Error updating device status:', err);
+                logger.error('Error updating device status:', err);
             }
         }
         
@@ -284,7 +293,7 @@ async function handleAuthentication(ws, message, authTimeout) {
         }
         
     } catch (error) {
-        console.error('❌ Authentication error:', error);
+        logger.error('❌ Authentication error:', error);
         sendError(ws, 'Authentication error');
         ws.close();
     }
@@ -306,15 +315,15 @@ function addToRoom(ws, role, deviceId) {
     if (role === 'device') {
         // Only one device per room
         if (room.device) {
-            console.log('⚠️ Device already connected, closing old connection');
+            logger.warn('⚠️ Device already connected, closing old connection');
             room.device.close();
         }
         room.device = ws;
-        console.log(`📱 Device added to room: ${deviceId}`);
+        logger.info(`📱 Device added to room: ${deviceId}`);
         
     } else if (role === 'viewer') {
         room.viewers.push(ws);
-        console.log(`👁️ Viewer added to room: ${deviceId} (total: ${room.viewers.length})`);
+        logger.info(`👁️ Viewer added to room: ${deviceId} (total: ${room.viewers.length})`);
     }
 }
 
@@ -340,7 +349,7 @@ function handleFrame(ws, message) {
     
     // Update last frame timestamp in database (throttled)
     throttledDbUpdate(deviceId);
-}
+    // Frame relay logging disabled in production (high frequency)
 
 /**
  * Handle input command from viewer
@@ -367,7 +376,7 @@ function handleInputCommand(ws, message) {
     // Forward command to device
     if (room.device.readyState === WebSocket.OPEN) {
         room.device.send(JSON.stringify(message));
-        console.log(`🎮 Input command sent to device: ${deviceId}`);
+        // Input logging disabled in production (high frequency - every touch/swipe)
     }
 }
 
@@ -392,7 +401,7 @@ function handleControlCommand(ws, message) {
     // Forward control command to device
     if (room.device.readyState === WebSocket.OPEN) {
         room.device.send(JSON.stringify(message));
-        console.log(`⚙️ Control command sent to device: ${deviceId}`);
+        logger.debug(`⚙️ Control command sent to device: ${deviceId}`);
     }
 }
 
@@ -407,14 +416,14 @@ async function handleDisconnect(ws) {
     
     if (!authenticated) return;
     
-    console.log(`🔌 Disconnect: ${role} from device ${deviceId}`);
+    logger.info(`🔌 Disconnect: ${role} from device ${deviceId}`);
     
     const room = rooms.get(deviceId);
     if (!room) return;
     
     if (role === 'device') {
         room.device = null;
-        console.log(`📱 Device disconnected from room: ${deviceId}`);
+        logger.info(`📱 Device disconnected from room: ${deviceId}`);
         
         // Notify all viewers
         room.viewers.forEach(viewer => {
@@ -435,14 +444,14 @@ async function handleDisconnect(ws) {
                  WHERE id = ?`,
                 [deviceId]
             );
-            console.log(`📡 Device ${deviceId} status updated to Disconnected`);
+            logger.info(`📡 Device ${deviceId} status updated to Disconnected`);
         } catch (err) {
-            console.error('Error updating device status:', err);
+            logger.error('Error updating device status:', err);
         }
         
     } else if (role === 'viewer') {
         room.viewers = room.viewers.filter(v => v !== ws);
-        console.log(`👁️ Viewer disconnected from room: ${deviceId} (remaining: ${room.viewers.length})`);
+        logger.info(`👁️ Viewer disconnected from room: ${deviceId} (remaining: ${room.viewers.length})`);
         
         // End session in database
         await endSession(metadata);
@@ -452,7 +461,7 @@ async function handleDisconnect(ws) {
     if (!room.device && room.viewers.length === 0) {
         rooms.delete(deviceId);
         sessionStats.delete(deviceId);
-        console.log(`🧹 Room cleaned up: ${deviceId}`);
+        logger.info(`🧹 Room cleaned up: ${deviceId}`);
     }
 }
 
@@ -473,10 +482,10 @@ async function createSession(metadata) {
         metadata.sessionId = result.insertId;
         metadata.sessionToken = sessionToken;
         
-        console.log(`📝 Session created: ${result.insertId}`);
+        logger.info(`📝 Session created: ${result.insertId}`);
         
     } catch (error) {
-        console.error('❌ Error creating session:', error);
+        logger.error('❌ Error creating session:', error);
     }
 }
 
@@ -500,10 +509,10 @@ async function endSession(metadata) {
             [stats.framesSent || 0, stats.inputsSent || 0, metadata.sessionId]
         );
         
-        console.log(`📝 Session ended: ${metadata.sessionId}`);
+        logger.info(`📝 Session ended: ${metadata.sessionId}`);
         
     } catch (error) {
-        console.error('❌ Error ending session:', error);
+        logger.error('❌ Error ending session:', error);
     }
 }
 
@@ -536,7 +545,7 @@ function throttledDbUpdate(deviceId) {
         dbPool.query(
             'UPDATE remotes SET last_frame_at = NOW() WHERE id = ?',
             [deviceId]
-        ).catch(err => console.error('DB update error:', err));
+        ).catch(err => logger.error('DB update error:', err));
     }
 }
 
@@ -588,21 +597,21 @@ async function start() {
     await initDatabase();
     
     server.listen(HTTP_PORT, () => {
-        console.log(`🌐 HTTP server running on port ${HTTP_PORT}`);
+        logger.info(`🌐 HTTP server running on port ${HTTP_PORT}`);
     });
     
-    console.log(`🔌 WebSocket server running on port ${WS_PORT}`);
-    console.log(`✅ Remote Control Relay Server started`);
+    logger.info(`🔌 WebSocket server running on port ${WS_PORT}`);
+    logger.info(`✅ Remote Control Relay Server started`);
 }
 
 start().catch(error => {
-    console.error('❌ Fatal error:', error);
+    logger.error('❌ Fatal error:', error);
     process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-    console.log('\n🛑 Shutting down gracefully...');
+    logger.info('\n🛑 Shutting down gracefully...');
     
     // Close all WebSocket connections
     wss.clients.forEach(client => {
@@ -616,3 +625,4 @@ process.on('SIGINT', async () => {
     
     process.exit(0);
 });
+}

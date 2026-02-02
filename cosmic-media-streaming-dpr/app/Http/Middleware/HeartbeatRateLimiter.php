@@ -19,13 +19,14 @@ class HeartbeatRateLimiter
 {
     /**
      * Minimum seconds between heartbeats (prevents abuse)
+     * Aligned with APK ConnectionManager HEARTBEAT_INTERVAL_FOREGROUND_MS = 30_000L
      */
-    const MIN_HEARTBEAT_INTERVAL = 10; // 10 seconds minimum
+    const MIN_HEARTBEAT_INTERVAL = 25; // 25 seconds minimum (APK sends every 30s, allow 5s tolerance)
     
     /**
      * Maximum heartbeats per minute (prevents DOS)
      */
-    const MAX_HEARTBEATS_PER_MINUTE = 10;
+    const MAX_HEARTBEATS_PER_MINUTE = 3; // 3 per minute = every 20 seconds average
     
     /**
      * Handle an incoming request

@@ -531,41 +531,43 @@ services:
 
   # ==========================================
   # SERVICE #3: REMOTE ANDROID DEVICE (Python)
-  # Device Management & Control Service
+  # DEPRECATED: APK now sends heartbeat directly via /api/devices/heartbeat
+  # This service caused status flapping and conflicts with APK heartbeat
   # ==========================================
   
-  remote-android:
-    image: kiosk-remote-android:prod
-    pull_policy: build
-    build:
-      context: ./remote-android-device
-      dockerfile: Dockerfile
-    container_name: remote-android-prod
-    restart: always
-    env_file:
-      - .env.prod
-    environment:
-      - DB_USER=${DB_USERNAME}
-      - DB_NAME=${DB_DATABASE}
-      - PORT=3001
-    # Port not exposed - accessed via Nginx reverse proxy
-    volumes:
-      - ./data-kiosk/logs/remote-android:/app/logs
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    networks:
-      - kiosk-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 60s
-      timeout: 20s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "30m"
-        max-file: "5"
+  # DISABLED - Remove comment to re-enable if needed
+  # remote-android:
+  #   image: kiosk-remote-android:prod
+  #   pull_policy: build
+  #   build:
+  #     context: ./remote-android-device
+  #     dockerfile: Dockerfile
+  #   container_name: remote-android-prod
+  #   restart: always
+  #   env_file:
+  #     - .env.prod
+  #   environment:
+  #     - DB_USER=${DB_USERNAME}
+  #     - DB_NAME=${DB_DATABASE}
+  #     - PORT=3001
+  #   # Port not exposed - accessed via Nginx reverse proxy
+  #   volumes:
+  #     - ./data-kiosk/logs/remote-android:/app/logs
+  #   depends_on:
+  #     mariadb:
+  #       condition: service_healthy
+  #   networks:
+  #     - kiosk-net
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+  #     interval: 60s
+  #     timeout: 20s
+  #     retries: 3
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "30m"
+  #       max-file: "5"
 
   # ==========================================
   # NGINX REVERSE PROXY (Optional but Recommended)
@@ -590,7 +592,7 @@ services:
       - cosmic-app-2
       - cosmic-app-3
       - generate-pdf
-      - remote-android
+      # - remote-android  # DISABLED: APK sends heartbeat directly to CMS
       - remote-control-relay
     networks:
       - kiosk-net

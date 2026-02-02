@@ -133,13 +133,17 @@ class RemoteResource extends Resource
                         default => 'heroicon-o-battery-0'
                     }),  
                 Tables\Columns\TextColumn::make('wifi_strength')
-                    ->label('WiFi')
+                    ->label('Signal')
                     ->formatStateUsing(fn ($state) => $state ? "$state dBm" : 'N/A')
                     ->color(fn ($state) => match(true) {
+                        !$state => 'gray',
                         $state >= -50 => 'success',
                         $state >= -70 => 'warning',
                         default => 'danger'
-                    }),
+                    })
+                    ->tooltip(fn ($state, $record) => 
+                        $state ? "{$record->network_type}: {$state} dBm" : "No signal data"
+                    ),
                 Tables\Columns\TextColumn::make('network_type')
                     ->label('Network')
                     ->badge()
