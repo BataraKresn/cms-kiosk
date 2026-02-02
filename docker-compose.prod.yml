@@ -623,9 +623,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_DATABASE}
       - LOG_LEVEL=info
-    ports:
-      - "3002:3002"  # HTTP API
-      - "3003:3003"  # WebSocket
+    # Ports removed - use internal network only
+    # External access via Nginx reverse proxy on port 80/443
+    # Internal services can access via http://remote-relay:3002 and ws://remote-relay:3003
     depends_on:
       mariadb:
         condition: service_healthy
