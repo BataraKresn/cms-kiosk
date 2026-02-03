@@ -12,7 +12,8 @@ class RemoteControlViewer extends Page
 
     protected static string $view = 'filament.pages.remote-control-viewer';
 
-    public Remote $record;
+    #[\Livewire\Attributes\Locked]
+    public $record = null;
     
     // Properties for view
     public bool $canControl = true;
