@@ -375,35 +375,15 @@
                     const result = await apiResponse.text();
                     console.log(result);
 
-                    const refreshHeaders = new Headers();
-                    refreshHeaders.append("Content-Type", "application/json");
-
-                    const refreshRaw = JSON.stringify({
-                        "video_id": videoId
-                    });
-
-                    const refreshOptions = {
-                        method: "POST",
-                        headers: refreshHeaders,
-                        body: refreshRaw,
-                        redirect: "follow"
-                    };
-
-                    const refreshResponse = await fetch(
-                        "{!! env('URL_APP') !!}/api/refreshDisplaysByVideo",
-                        refreshOptions);
-                    const refreshResult = await refreshResponse.json();
-                    console.log("Refresh displays response:", refreshResult);
-
-                    let successMessage = "Edit video successfully!";
-                    if (refreshResult.displays_count > 0) {
-                        successMessage += ` Refreshed ${refreshResult.displays_count} displays.`;
-                    }
-
+                    // NO MORE AUTOMATIC REFRESH - Cache will be handled server-side
+                    // This prevents the "muter-muter" issue from aggressive display reloads
+                    // If device needs immediate update, admin can manually trigger from device page
+                    
                     Swal.fire({
                         position: "center",
                         icon: "success",
-                        title: successMessage,
+                        title: "Video updated successfully!",
+                        text: "Changes will appear on displays next page reload",
                         showConfirmButton: false,
                         timer: 1500
                     });

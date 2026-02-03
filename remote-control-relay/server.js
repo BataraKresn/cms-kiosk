@@ -178,6 +178,13 @@ async function handleMessage(ws, message, authTimeout) {
         case 'ping':
             ws.send('pong');
             break;
+        
+        case 'device_status':
+        case 'heartbeat':
+            // Device heartbeat - just acknowledge
+            // Device stats: battery, temperature, fps, etc.
+            logger.debug('💓 Device heartbeat from:', metadata.deviceId);
+            break;
             
         default:
             logger.warn('⚠️ Unknown message type:', type);

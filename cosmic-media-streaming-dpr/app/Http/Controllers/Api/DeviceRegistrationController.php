@@ -41,8 +41,9 @@ class DeviceRegistrationController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 200);
         }
 
         $deviceId = $request->device_id;
@@ -64,11 +65,6 @@ class DeviceRegistrationController extends Controller
                 'status' => 'Connected',
             ]);
 
-            Log::info('Device re-registered', [
-                'device_id' => $deviceId,
-                'remote_id' => $remote->id
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Device updated successfully',
@@ -78,7 +74,7 @@ class DeviceRegistrationController extends Controller
                     'remote_control_enabled' => (bool) $remote->remote_control_enabled,
                     'websocket_url' => config('remotecontrol.relay_ws_url'),
                 ]
-            ]);
+            ], 200);
         }
 
         // Create new remote record
@@ -101,12 +97,6 @@ class DeviceRegistrationController extends Controller
             'grace_period_seconds' => 300,
         ]);
 
-        Log::info('New device registered', [
-            'device_id' => $deviceId,
-            'remote_id' => $remote->id,
-            'device_name' => $request->device_name
-        ]);
-
         return response()->json([
             'success' => true,
             'message' => 'Device registered successfully',
@@ -115,9 +105,8 @@ class DeviceRegistrationController extends Controller
                 'token' => $token,
                 'remote_control_enabled' => false,
                 'websocket_url' => config('remotecontrol.relay_ws_url'),
-                'instructions' => 'Device registered. Admin must enable remote control in CMS to activate this feature.'
             ]
-        ], 201);
+        ], 200);
     }
 
     /**

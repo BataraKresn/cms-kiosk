@@ -70,6 +70,7 @@ class DisplayController extends Controller
     {
         try {
             $videoId = $request->input('video_id');
+            $forceRefresh = $request->input('force', false); // Optional: force full refresh
 
             $media = Media::where('mediable_type', 'App\Models\MediaVideo')
                 ->where('mediable_id', $videoId)
@@ -82,15 +83,22 @@ class DisplayController extends Controller
                 ], 404);
             }
 
-            // Optimize query to get only tokens
+            // Get affected displays
             $displays = Display::whereHas('schedule.schedule_playlists.playlists.playlist_layouts.layout.spots', function ($query) use ($media) {
                 $query->where('media_id', $media->id);
             })
             ->whereNotNull('token')
             ->pluck('token');
 
+            if ($displays->isEmpty()) {
+                return response()->json([
+                    'message' => 'No displays using this media',
+                    'status' => 200,
+                    'displays_count' => 0
+                ]);
+            }
+
             $urlAPI = env('URL_PDF');
-            
             if (!$urlAPI) {
                 return response()->json([
                     'message' => 'URL_PDF environment variable not configured',
@@ -98,15 +106,24 @@ class DisplayController extends Controller
                 ], 500);
             }
 
-            // Dispatch jobs to queue for async processing
+            // Invalidate cache for affected displays (SMART: only affected ones)
+            $refreshedCount = 0;
             foreach ($displays as $token) {
-                RefreshDisplayJob::dispatch($token, $urlAPI);
+                // Clear cache to force reload
+                Cache::tags(['display', 'display_' . $token])->flush();
+                
+                // Only dispatch job if force=true (avoid unnecessary device reloads)
+                if ($forceRefresh) {
+                    RefreshDisplayJob::dispatch($token, $urlAPI);
+                    $refreshedCount++;
+                }
             }
 
             return response()->json([
-                'message' => "Queued refresh for {$displays->count()} displays",
+                'message' => "Cache cleared for {$displays->count()} displays" . ($refreshedCount > 0 ? " (refresh queued: {$refreshedCount})" : ''),
                 'status' => 200,
-                'displays_count' => $displays->count()
+                'displays_count' => $displays->count(),
+                'refreshed' => $refreshedCount
             ]);
         } catch (\Throwable $th) {
             Log::error('Error refreshing displays: ' . $th->getMessage());

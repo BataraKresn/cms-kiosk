@@ -163,7 +163,7 @@ class RemoteControlViewer {
             role: 'viewer',
             deviceId: this.config.deviceId,
             userId: this.config.userId,
-            token: this.config.deviceToken // In production, use session token
+            token: this.config.sessionToken // Use session token for viewer auth
         };
         
         this.send(authMessage);
