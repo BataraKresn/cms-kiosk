@@ -13,6 +13,10 @@ class RemoteControlViewer extends Page
     protected static string $view = 'filament.pages.remote-control-viewer';
 
     public Remote $record;
+    
+    // Properties for view
+    public bool $canControl = true;
+    public bool $canRecord = false;
 
     public function mount($record): void
     {
@@ -20,8 +24,12 @@ class RemoteControlViewer extends Page
         
         // Check if remote control is enabled
         if (!$this->record->remote_control_enabled) {
-            $this->redirect(route('filament.admin.resources.remotes.index'));
+            $this->redirect(route('filament.back-office.resources.remotes.index'));
         }
+        
+        // Set permissions based on user role (can be customized)
+        $this->canControl = true; // Allow control by default
+        $this->canRecord = auth()->user()->hasRole('admin'); // Only admin can record
     }
 
     public function getTitle(): string | Htmlable

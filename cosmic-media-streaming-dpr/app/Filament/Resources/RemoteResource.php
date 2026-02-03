@@ -210,9 +210,9 @@ class RemoteResource extends Resource
                     ->label('Remote Control')
                     ->icon('heroicon-o-tv')
                     ->color('success')
-                    ->url(fn (Remote $record): string => route('filament.admin.resources.remotes.remote-control-viewer', ['record' => $record->id]))
-                    ->visible(fn (Remote $record): bool => !$record->trashed() && $record->remote_control_enabled && $record->status === 'Connected')
-                    ->openUrlInNewTab(),
+                    ->url(fn (Remote $record): string => RemoteResource::getUrl('remote-control-viewer', ['record' => $record]))
+                    ->extraAttributes(['wire:navigate' => false])
+                    ->visible(fn (Remote $record): bool => !$record->trashed() && $record->remote_control_enabled && $record->status === 'Connected'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

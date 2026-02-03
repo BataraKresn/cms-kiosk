@@ -15,11 +15,11 @@
             <div class="flex items-center justify-between">
                 {{-- Device Info --}}
                 <div class="flex items-center space-x-4">
-                    <div class="w-3 h-3 rounded-full {{ $deviceStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-red-500' }}"></div>
+                    <div class="w-3 h-3 rounded-full {{ $this->record->status === 'Connected' ? 'bg-green-500 animate-pulse' : 'bg-red-500' }}"></div>
                     <div>
-                        <h2 class="text-lg font-semibold">{{ $device->name }}</h2>
+                        <h2 class="text-lg font-semibold">{{ $this->record->name }}</h2>
                         <p class="text-sm text-gray-500">
-                            IP: {{ $device->ip_device }}:{{ $device->port_device }} | 
+                            IP: {{ $this->record->ip_address }} | Port: {{ $this->record->remote_control_port }} | 
                             Status: <span id="connection-status">Connecting...</span>
                         </p>
                     </div>
@@ -98,7 +98,7 @@
                 </div>
                 <div class="flex items-center space-x-2">
                     <span class="font-medium">Resolution:</span>
-                    <span id="stat-resolution">{{ $device->screen_resolution ?? 'Unknown' }}</span>
+                    <span id="stat-resolution">{{ $this->record->screen_resolution ?? 'Unknown' }}</span>
                 </div>
                 <div class="flex items-center space-x-2">
                     <span class="font-medium">Session:</span>
@@ -186,9 +186,9 @@
     @push('scripts')
     <script>
         window.remoteControlConfig = {
-            deviceId: {{ $device->id }},
-            deviceToken: '{{ $device->token }}',
-            wsUrl: '{{ config('app.remote_control_ws_url', 'ws://localhost:3003') }}',
+            deviceId: {{ $this->record->id }},
+            deviceToken: '{{ $this->record->token }}',
+            wsUrl: '{{ $this->getRelayServerUrl() }}',
             userId: {{ auth()->id() }},
             canControl: {{ $canControl ? 'true' : 'false' }},
             canRecord: {{ $canRecord ? 'true' : 'false' }},

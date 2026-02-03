@@ -69,6 +69,7 @@ class AdminPanelProvider extends PanelProvider
                 // \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
             ])
             ->darkMode(true)
-            ->favicon(secure_asset('/images/logo.svg'));
+            ->favicon(secure_asset('/images/logo.svg'))
+            ->spa(false);
     }
 }
