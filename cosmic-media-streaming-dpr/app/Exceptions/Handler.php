@@ -24,7 +24,13 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            //
+            if (str_contains(request()->path(), 'remote-control')) {
+                \Log::error('remote-control exception: ' . get_class($e) . ' - ' . $e->getMessage(), [
+                    'path' => request()->path(),
+                    'method' => request()->method(),
+                    'exception' => $e,
+                ]);
+            }
         });
     }
 }
