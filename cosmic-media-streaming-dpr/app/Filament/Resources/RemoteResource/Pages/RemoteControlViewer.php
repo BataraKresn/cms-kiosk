@@ -44,16 +44,27 @@ class RemoteControlViewer extends Page
 
     public function mount($record): void
     {
-        $this->record = Remote::findOrFail($record);
+        \Log::info('RemoteControlViewer::mount called with record=' . $record);
+        
+        try {
+            $this->record = Remote::findOrFail($record);
+            \Log::info('Remote found: ' . $this->record->id);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to find remote: ' . $e->getMessage(), ['record' => $record]);
+            throw $e;
+        }
         
         // Check if remote control is enabled
         if (!$this->record->remote_control_enabled) {
+            \Log::info('Remote control disabled for record ' . $record);
             $this->redirect(route('filament.back-office.resources.remotes.index'));
         }
         
         // Set permissions based on user role (can be customized)
         $this->canControl = true; // Allow control by default
         $this->canRecord = auth()->user()->hasRole('admin'); // Only admin can record
+        
+        \Log::info('RemoteControlViewer::mount completed successfully');
     }
 
     public function getTitle(): string | Htmlable
