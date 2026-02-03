@@ -139,10 +139,12 @@ class DisplayController extends Controller
     {
         try {
             $liveUrlId = $request->input('live_url_id');
+            $forceRefresh = $request->input('force', false);
 
-            // Find the media record for this live URL
+            // Use indexed query with select() to reduce data transfer
             $media = Media::where('mediable_type', 'App\Models\MediaLiveUrl')
                 ->where('mediable_id', $liveUrlId)
+                ->select('id')
                 ->first();
 
             if (!$media) {
@@ -152,31 +154,39 @@ class DisplayController extends Controller
                 ], 404);
             }
 
-            // Optimize query to get only tokens
+            // Use pluck to fetch only tokens (smaller dataset)
             $displays = Display::whereHas('schedule.schedule_playlists.playlists.playlist_layouts.layout.spots', function ($query) use ($media) {
                 $query->where('media_id', $media->id);
             })
             ->whereNotNull('token')
             ->pluck('token');
 
-            $urlAPI = env('URL_PDF');
-            
-            if (!$urlAPI) {
+            if ($displays->isEmpty()) {
                 return response()->json([
-                    'message' => 'URL_PDF environment variable not configured',
-                    'status' => 500
-                ], 500);
+                    'message' => 'No displays using this media',
+                    'status' => 200,
+                    'displays_count' => 0
+                ]);
             }
 
-            // Dispatch jobs to queue for async processing
+            $urlAPI = env('URL_PDF');
+            $refreshedCount = 0;
+
+            // Clear cache and optionally dispatch refresh jobs
             foreach ($displays as $token) {
-                RefreshDisplayJob::dispatch($token, $urlAPI);
+                Cache::tags(['display', 'display_' . $token])->flush();
+                
+                if ($forceRefresh && $urlAPI) {
+                    RefreshDisplayJob::dispatch($token, $urlAPI);
+                    $refreshedCount++;
+                }
             }
 
             return response()->json([
-                'message' => "Queued refresh for {$displays->count()} displays",
+                'message' => "Cache cleared for {$displays->count()} displays" . ($refreshedCount > 0 ? " (refresh queued: {$refreshedCount})" : ''),
                 'status' => 200,
-                'displays_count' => $displays->count()
+                'displays_count' => $displays->count(),
+                'refreshed' => $refreshedCount
             ]);
         } catch (\Throwable $th) {
             Log::error('Error refreshing displays: ' . $th->getMessage());
@@ -192,6 +202,7 @@ class DisplayController extends Controller
     {
         try {
             $mediaHtmlId = $request->input('media_html_id');
+            $forceRefresh = $request->input('force', false);
 
             if (!$mediaHtmlId) {
                 return response()->json([
@@ -200,8 +211,10 @@ class DisplayController extends Controller
                 ], 400);
             }
 
+            // Use indexed query with select() to reduce data transfer
             $media = Media::where('mediable_type', 'App\Models\MediaHtml')
                 ->where('mediable_id', $mediaHtmlId)
+                ->select('id')
                 ->first();
 
             if (!$media) {
@@ -211,32 +224,42 @@ class DisplayController extends Controller
                 ], 404);
             }
 
+            // Use pluck to fetch only tokens (smaller dataset)
             $displays = Display::whereHas('schedule.schedule_playlists.playlists.playlist_layouts.layout.spots', function ($query) use ($media) {
                 $query->where('media_id', $media->id);
-            })->whereNotNull('token')->get();
+            })
+            ->whereNotNull('token')
+            ->pluck('token');
+
+            if ($displays->isEmpty()) {
+                return response()->json([
+                    'message' => 'No displays using this media',
+                    'status' => 200,
+                    'displays_count' => 0
+                ]);
+            }
 
             $urlAPI = env('URL_PDF');
-            $successCount = 0;
-            $failCount = 0;
+            $refreshedCount = 0;
 
-            foreach ($displays as $display) {
-                if ($display->token) {
-                    $url = $urlAPI . '/send_refresh_device?token=' . $display->token;
-                    $response = Http::get($url);
-
-                    if ($response->successful()) {
-                        $successCount++;
-                    } else {
-                        $failCount++;
-                    }
+            // Clear cache and optionally dispatch refresh jobs
+            foreach ($displays as $token) {
+                Cache::tags(['display', 'display_' . $token])->flush();
+                
+                if ($forceRefresh && $urlAPI) {
+                    RefreshDisplayJob::dispatch($token, $urlAPI);
+                    $refreshedCount++;
                 }
             }
 
             return response()->json([
-                'message' => "Refreshed $successCount displays successfully. Failed: $failCount",
+                'message' => "Cache cleared for {$displays->count()} displays" . ($refreshedCount > 0 ? " (refresh queued: {$refreshedCount})" : ''),
                 'status' => 200,
-            ], 200);
+                'displays_count' => $displays->count(),
+                'refreshed' => $refreshedCount
+            ]);
         } catch (\Exception $e) {
+            Log::error('Error refreshing displays: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Failed to refresh displays',
                 'error' => $e->getMessage(),

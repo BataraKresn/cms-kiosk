@@ -20,22 +20,32 @@ class LayoutService
     public static function build(Layout $layout, $is_content = false)
     {
         // Cache layout builds untuk improve performance
+        // Use longer cache duration (2 hours) for build output
         $cacheKey = "layout_{$layout->id}_content_{$is_content}";
         
-        return Cache::remember($cacheKey, self::CACHE_DURATION * 60, function () use ($layout, $is_content) {
-            return array_merge(static::options($layout, $is_content), static::children($layout, $is_content));
-        });
+        return Cache::tags(['layout', 'layout_' . $layout->id])->remember(
+            $cacheKey, 
+            7200, // 2 hours cache
+            function () use ($layout, $is_content) {
+                return array_merge(
+                    static::options($layout, $is_content), 
+                    static::children($layout, $is_content)
+                );
+            }
+        );
     }
 
     /**
-     * Clear cache untuk specific layout
+     * Clear cache untuk specific layout dan all dependent displays
      */
     public static function clearCache(Layout $layout): void
     {
-        Cache::forget("layout_{$layout->id}_content_true");
-        Cache::forget("layout_{$layout->id}_content_false");        
-        // Clear all display caches that might use this layout
-        Cache::tags(['display'])->flush();    }
+        // Clear layout cache
+        Cache::tags(['layout', 'layout_' . $layout->id])->flush();
+        
+        // Also clear all display caches using this layout
+        Cache::tags(['display'])->flush();
+    }
 
     public static function getContent($spot)
     {
