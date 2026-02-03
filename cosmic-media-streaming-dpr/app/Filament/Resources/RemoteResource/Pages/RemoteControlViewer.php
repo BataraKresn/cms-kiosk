@@ -17,6 +17,13 @@ class RemoteControlViewer extends Page
     // Properties for view
     public bool $canControl = true;
     public bool $canRecord = false;
+    
+    public function boot(): void
+    {
+        parent::boot();
+        \Log::info('RemoteControlViewer::boot - component initialized');
+    }
+    
     /**
      * Check if user can access this page
      */
