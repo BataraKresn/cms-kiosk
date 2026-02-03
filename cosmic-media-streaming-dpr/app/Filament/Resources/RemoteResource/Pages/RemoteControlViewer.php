@@ -17,6 +17,30 @@ class RemoteControlViewer extends Page
     // Properties for view
     public bool $canControl = true;
     public bool $canRecord = false;
+    /**
+     * Check if user can access this page
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            \Log::debug('RemoteControlViewer::canAccess - No authenticated user');
+            return false;
+        }
+        
+        // Check if user can view any remote
+        $canViewAny = static::getResource()::canViewAny();
+        
+        \Log::debug('RemoteControlViewer::canAccess', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'canViewAny' => $canViewAny,
+            'parameters' => $parameters,
+        ]);
+        
+        return $canViewAny;
+    }
 
     public function mount($record): void
     {
