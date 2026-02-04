@@ -5,21 +5,38 @@
  * - WebSocket connection to relay server
  * - Receiving and displaying video frames
  * - Capturing and sending input events (touch, swipe, keyboard)
+ * - Connection state management with auto-reconnect
  * - UI updates and statistics
  * 
  * File location: public/js/remote-control-viewer.js
  * 
  * @author Cosmic Development Team
- * @version 1.0.0 (POC)
+ * @version 2.0.0
  */
 
 class RemoteControlViewer {
     constructor(config) {
         this.config = config;
         this.ws = null;
-        this.isConnected = false;
         this.canvas = null;
         this.ctx = null;
+        
+        // Connection state manager
+        this.connectionManager = new ConnectionStateManager({
+            maxReconnectAttempts: config.maxReconnectAttempts || 5,
+            reconnectDelayMs: config.reconnectDelayMs || 3000,
+            autoReconnect: config.autoReconnect !== false,
+            onStateChange: (state, error) => this.onConnectionStateChange(state, error),
+            onReconnectCountdown: (seconds) => this.onReconnectCountdown(seconds),
+            onReconnectAttempt: (attempt) => this.attemptConnection(),
+            onMaxReconnectAttemptsReached: () => this.onMaxReconnectAttemptsReached()
+        });
+        
+        // Frame timeout detection
+        this.frameTimeoutHandle = null;
+        this.lastFrameTime = Date.now();
+        this.frameTimeoutDuration = 30000; // 30 seconds - show disconnected if no frame
+        this.authSuccessTime = null;
         
         // Statistics
         this.stats = {
@@ -49,7 +66,7 @@ class RemoteControlViewer {
      * Initialize viewer
      */
     init() {
-        console.log('🎮 Initializing Remote Control Viewer');
+        console.log('🎮 Initializing Remote Control Viewer v2.0');
         
         // Get DOM elements
         this.canvas = document.getElementById('device-screen');
@@ -58,6 +75,10 @@ class RemoteControlViewer {
             connectionStatus: document.getElementById('connection-status'),
             loadingOverlay: document.getElementById('loading-overlay'),
             disconnectedOverlay: document.getElementById('disconnected-overlay'),
+            reconnectingOverlay: document.getElementById('reconnecting-overlay'),
+            errorMessage: document.getElementById('error-message'),
+            reconnectCountdown: document.getElementById('reconnect-countdown'),
+            reconnectAttempt: document.getElementById('reconnect-attempt'),
             statFps: document.getElementById('stat-fps'),
             statLatency: document.getElementById('stat-latency'),
             statDuration: document.getElementById('stat-duration'),
@@ -67,6 +88,7 @@ class RemoteControlViewer {
             btnRecord: document.getElementById('btn-record'),
             btnDisconnect: document.getElementById('btn-disconnect'),
             btnRetry: document.getElementById('btn-retry'),
+            btnCancelReconnect: document.getElementById('btn-cancel-reconnect'),
             keyboardModal: document.getElementById('keyboard-modal'),
             btnCloseKeyboard: document.getElementById('btn-close-keyboard'),
             btnSendText: document.getElementById('btn-send-text'),
@@ -102,8 +124,9 @@ class RemoteControlViewer {
         this.elements.btnBack?.addEventListener('click', () => this.sendKeyPress(4)); // KEYCODE_BACK
         this.elements.btnHome?.addEventListener('click', () => this.sendKeyPress(3)); // KEYCODE_HOME
         this.elements.btnKeyboard?.addEventListener('click', () => this.showKeyboard());
-        this.elements.btnDisconnect?.addEventListener('click', () => this.disconnect());
-        this.elements.btnRetry?.addEventListener('click', () => this.connect());
+        this.elements.btnDisconnect?.addEventListener('click', () => this.manualDisconnect());
+        this.elements.btnRetry?.addEventListener('click', () => this.manualReconnect());
+        this.elements.btnCancelReconnect?.addEventListener('click', () => this.cancelReconnect());
         
         // Keyboard modal
         this.elements.btnCloseKeyboard?.addEventListener('click', () => this.hideKeyboard());
@@ -125,9 +148,8 @@ class RemoteControlViewer {
     connect() {
         console.log('🔌 Connecting to relay server:', this.config.wsUrl);
         
-        this.elements.loadingOverlay.classList.remove('hidden');
-        this.elements.disconnectedOverlay.classList.add('hidden');
-        this.updateConnectionStatus('Connecting...');
+        this.connectionManager.setState(ConnectionStateManager.States.CONNECTING);
+        this.updateUIForState(ConnectionStateManager.States.CONNECTING);
         
         try {
             this.ws = new WebSocket(this.config.wsUrl);
@@ -139,8 +161,45 @@ class RemoteControlViewer {
             
         } catch (error) {
             console.error('❌ WebSocket connection error:', error);
-            this.onError(error);
+            this.connectionManager.handleError(
+                ConnectionStateManager.ErrorTypes.NETWORK_ERROR,
+                error.message
+            );
         }
+    }
+    
+    /**
+     * Attempt connection (called by connection manager)
+     */
+    attemptConnection() {
+        this.connect();
+    }
+    
+    /**
+     * Manual reconnection triggered by user
+     */
+    manualReconnect() {
+        console.log('🔄 Manual reconnection requested');
+        this.connectionManager.manualReconnect();
+        this.connect();
+    }
+    
+    /**
+     * Cancel auto-reconnection
+     */
+    cancelReconnect() {
+        console.log('⏹️ Reconnection cancelled');
+        this.connectionManager.manualDisconnect();
+        this.updateUIForState(ConnectionStateManager.States.DISCONNECTED);
+    }
+    
+    /**
+     * Manual disconnect (user-initiated)
+     */
+    manualDisconnect() {
+        console.log('🔌 User disconnection');
+        this.connectionManager.manualDisconnect();
+        this.disconnect();
     }
     
     /**
@@ -148,7 +207,6 @@ class RemoteControlViewer {
      */
     onOpen() {
         console.log('✅ WebSocket connected');
-        this.isConnected = true;
         
         // Send authentication message
         this.authenticate();
@@ -171,6 +229,97 @@ class RemoteControlViewer {
     }
     
     /**
+     * Connection state changed
+     */
+    onConnectionStateChange(state, error) {
+        console.log(`📊 Connection state: ${state}`, error);
+        this.updateUIForState(state, error);
+        this.updateControlsState(state);
+    }
+    
+    /**
+     * Reconnect countdown update
+     */
+    onReconnectCountdown(seconds) {
+        if (this.elements.reconnectCountdown) {
+            this.elements.reconnectCountdown.textContent = seconds;
+        }
+    }
+    
+    /**
+     * Max reconnect attempts reached
+     */
+    onMaxReconnectAttemptsReached() {
+        console.error('❌ Maximum reconnection attempts reached');
+        alert('Unable to reconnect to device. Please check the device status and try again.');
+    }
+    
+    /**
+     * Update UI based on connection state
+     */
+    updateUIForState(state, error = null) {
+        // Hide all overlays first
+        this.elements.loadingOverlay?.classList.add('hidden');
+        this.elements.disconnectedOverlay?.classList.add('hidden');
+        this.elements.reconnectingOverlay?.classList.add('hidden');
+        
+        switch (state) {
+            case ConnectionStateManager.States.CONNECTING:
+                this.elements.loadingOverlay?.classList.remove('hidden');
+                this.updateConnectionStatus('Connecting...');
+                break;
+            
+            case ConnectionStateManager.States.CONNECTED:
+                this.updateConnectionStatus('Connected');
+                // All overlays remain hidden
+                break;
+            
+            case ConnectionStateManager.States.RECONNECTING:
+                this.elements.reconnectingOverlay?.classList.remove('hidden');
+                const status = this.connectionManager.getReconnectStatus();
+                if (this.elements.reconnectAttempt) {
+                    this.elements.reconnectAttempt.textContent = `Attempt ${status.attempt}/${status.maxAttempts}`;
+                }
+                this.updateConnectionStatus('Reconnecting...');
+                break;
+            
+            case ConnectionStateManager.States.DISCONNECTED:
+            case ConnectionStateManager.States.ERROR:
+                this.elements.disconnectedOverlay?.classList.remove('hidden');
+                if (this.elements.errorMessage) {
+                    this.elements.errorMessage.textContent = this.connectionManager.getErrorMessage();
+                }
+                this.updateConnectionStatus(state === ConnectionStateManager.States.ERROR ? 'Error' : 'Disconnected');
+                break;
+        }
+    }
+    
+    /**
+     * Update control buttons state (enabled/disabled)
+     */
+    updateControlsState(state) {
+        const isConnected = state === ConnectionStateManager.States.CONNECTED;
+        const buttons = [
+            this.elements.btnBack,
+            this.elements.btnHome,
+            this.elements.btnKeyboard,
+            this.elements.btnRecord
+        ];
+        
+        buttons.forEach(btn => {
+            if (btn) {
+                btn.disabled = !isConnected;
+                btn.style.opacity = isConnected ? '1' : '0.5';
+                btn.style.cursor = isConnected ? 'pointer' : 'not-allowed';
+            }
+        });
+        
+        // Update canvas pointer style
+        this.canvas.style.cursor = isConnected ? 'crosshair' : 'not-allowed';
+        this.canvas.style.opacity = isConnected ? '1' : '0.7';
+    }
+    
+    /**
      * WebSocket message received
      */
     onMessage(event) {
@@ -189,29 +338,47 @@ class RemoteControlViewer {
         switch (message.type) {
             case 'auth_success':
                 console.log('✅ Authentication successful');
-                this.updateConnectionStatus('Connected');
-                this.elements.loadingOverlay.classList.add('hidden');
+                this.connectionManager.handleConnected();
+                this.authSuccessTime = Date.now();
+                // Start frame timeout detection
+                this.startFrameTimeoutDetection();
                 break;
                 
             case 'auth_failed':
                 console.error('❌ Authentication failed:', message.reason);
-                this.updateConnectionStatus('Authentication Failed');
-                alert('Authentication failed: ' + message.reason);
-                this.disconnect();
+                this.connectionManager.handleError(
+                    ConnectionStateManager.ErrorTypes.AUTH_FAILED,
+                    message.reason || 'Authentication failed'
+                );
+                // Close connection on auth failure
+                setTimeout(() => this.disconnect(), 2000);
                 break;
                 
             case 'frame':
+                // Reset frame timeout when frame received
+                this.lastFrameTime = Date.now();
+                if (this.frameTimeoutHandle) {
+                    clearTimeout(this.frameTimeoutHandle);
+                }
+                // Restart timeout detection
+                this.startFrameTimeoutDetection();
                 this.handleFrame(message);
                 break;
                 
             case 'device_disconnected':
                 console.warn('⚠️ Device disconnected');
-                this.showDisconnectedOverlay();
+                this.connectionManager.handleError(
+                    ConnectionStateManager.ErrorTypes.DEVICE_OFFLINE,
+                    'Device disconnected from relay server'
+                );
                 break;
                 
             case 'error':
                 console.error('❌ Server error:', message.message);
-                alert('Error: ' + message.message);
+                this.connectionManager.handleError(
+                    ConnectionStateManager.ErrorTypes.UNKNOWN,
+                    message.message || 'Server error'
+                );
                 break;
                 
             default:
@@ -244,11 +411,41 @@ class RemoteControlViewer {
     }
     
     /**
+     * Start frame timeout detection
+     * If no frames arrive within 30 seconds after auth success, show disconnected overlay
+     */
+    startFrameTimeoutDetection() {
+        // Clear existing timeout
+        if (this.frameTimeoutHandle) {
+            clearTimeout(this.frameTimeoutHandle);
+        }
+        
+        // Set new timeout
+        this.frameTimeoutHandle = setTimeout(() => {
+            const timeSinceAuth = Date.now() - this.authSuccessTime;
+            const timeSinceLastFrame = Date.now() - this.lastFrameTime;
+            
+            console.warn(`⚠️ Frame timeout detected! Auth success: ${timeSinceAuth}ms ago, Last frame: ${timeSinceLastFrame}ms ago`);
+            
+            // Only show disconnected if we're past auth success
+            if (timeSinceAuth > 3000) { // Give it 3 seconds after auth to get first frame
+                this.connectionManager.handleError(
+                    ConnectionStateManager.ErrorTypes.TIMEOUT,
+                    'No video frames received from device'
+                );
+            }
+        }, this.frameTimeoutDuration);
+    }
+    
+    /**
      * WebSocket error
      */
     onError(error) {
         console.error('❌ WebSocket error:', error);
-        this.updateConnectionStatus('Connection Error');
+        this.connectionManager.handleError(
+            ConnectionStateManager.ErrorTypes.NETWORK_ERROR,
+            'WebSocket connection error'
+        );
     }
     
     /**
@@ -256,15 +453,25 @@ class RemoteControlViewer {
      */
     onClose() {
         console.log('🔌 WebSocket closed');
-        this.isConnected = false;
-        this.updateConnectionStatus('Disconnected');
-        this.showDisconnectedOverlay();
+        // Clear frame timeout on close
+        if (this.frameTimeoutHandle) {
+            clearTimeout(this.frameTimeoutHandle);
+        }
+        
+        // Only handle disconnection if not already in error/disconnected state
+        if (this.connectionManager.getState() === ConnectionStateManager.States.CONNECTED ||
+            this.connectionManager.getState() === ConnectionStateManager.States.CONNECTING) {
+            this.connectionManager.handleDisconnected();
+        }
     }
     
     /**
      * Disconnect from server
      */
     disconnect() {
+        if (this.frameTimeoutHandle) {
+            clearTimeout(this.frameTimeoutHandle);
+        }
         if (this.ws) {
             this.ws.close();
             this.ws = null;
@@ -278,7 +485,7 @@ class RemoteControlViewer {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         } else {
-            console.warn('⚠️ WebSocket not connected');
+            console.warn('⚠️ WebSocket not connected, cannot send message');
         }
     }
     
@@ -286,6 +493,10 @@ class RemoteControlViewer {
      * Handle mouse down (start of touch/swipe)
      */
     handleMouseDown(e) {
+        if (!this.connectionManager.canSendCommands()) {
+            return; // Ignore if not connected
+        }
+        
         const coords = this.getCanvasCoordinates(e);
         this.touchState.startX = coords.x;
         this.touchState.startY = coords.y;
@@ -296,18 +507,22 @@ class RemoteControlViewer {
      * Handle mouse move (detecting swipe)
      */
     handleMouseMove(e) {
-        if (this.touchState.isSwiping) {
-            const coords = this.getCanvasCoordinates(e);
-            this.touchState.endX = coords.x;
-            this.touchState.endY = coords.y;
+        if (!this.connectionManager.canSendCommands() || !this.touchState.isSwiping) {
+            return;
         }
+        
+        const coords = this.getCanvasCoordinates(e);
+        this.touchState.endX = coords.x;
+        this.touchState.endY = coords.y;
     }
     
     /**
      * Handle mouse up (end of touch/swipe)
      */
     handleMouseUp(e) {
-        if (!this.touchState.isSwiping) return;
+        if (!this.connectionManager.canSendCommands() || !this.touchState.isSwiping) {
+            return;
+        }
         
         const coords = this.getCanvasCoordinates(e);
         this.touchState.endX = coords.x;
@@ -374,8 +589,10 @@ class RemoteControlViewer {
      * Send touch event to device
      */
     sendTouch(x, y) {
-        if (!this.config.canControl) {
-            alert('You do not have permission to control this device');
+        if (!this.config.canControl || !this.connectionManager.canSendCommands()) {
+            if (!this.config.canControl) {
+                alert('You do not have permission to control this device');
+            }
             return;
         }
         
@@ -397,7 +614,9 @@ class RemoteControlViewer {
      * Send swipe gesture to device
      */
     sendSwipe(startX, startY, endX, endY) {
-        if (!this.config.canControl) return;
+        if (!this.config.canControl || !this.connectionManager.canSendCommands()) {
+            return;
+        }
         
         const command = {
             type: 'input_command',
@@ -420,7 +639,9 @@ class RemoteControlViewer {
      * Send key press to device
      */
     sendKeyPress(keyCode) {
-        if (!this.config.canControl) return;
+        if (!this.config.canControl || !this.connectionManager.canSendCommands()) {
+            return;
+        }
         
         const command = {
             type: 'input_command',
@@ -438,6 +659,9 @@ class RemoteControlViewer {
      * Show keyboard modal
      */
     showKeyboard() {
+        if (!this.connectionManager.canSendCommands()) {
+            return;
+        }
         this.elements.keyboardModal.classList.remove('hidden');
         this.elements.keyboardInput.focus();
     }
@@ -457,8 +681,10 @@ class RemoteControlViewer {
         const text = this.elements.keyboardInput.value;
         if (!text) return;
         
-        if (!this.config.canControl) {
-            alert('You do not have permission to control this device');
+        if (!this.config.canControl || !this.connectionManager.canSendCommands()) {
+            if (!this.config.canControl) {
+                alert('You do not have permission to control this device');
+            }
             return;
         }
         
@@ -494,21 +720,14 @@ class RemoteControlViewer {
         const color = {
             'Connected': 'text-green-500',
             'Connecting...': 'text-yellow-500',
+            'Reconnecting...': 'text-orange-500',
             'Disconnected': 'text-red-500',
+            'Error': 'text-red-500',
             'Connection Error': 'text-red-500',
             'Authentication Failed': 'text-red-500'
         }[status] || 'text-gray-500';
         
         this.elements.connectionStatus.className = color + ' font-semibold';
-    }
-    
-    /**
-     * Show disconnected overlay
-     */
-    showDisconnectedOverlay() {
-        this.elements.loadingOverlay.classList.add('hidden');
-        this.elements.disconnectedOverlay.classList.remove('hidden');
-        this.elements.disconnectedOverlay.style.display = 'flex';
     }
     
     /**
@@ -528,6 +747,17 @@ class RemoteControlViewer {
         const seconds = duration % 60;
         this.elements.statDuration.textContent = 
             `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    /**
+     * Cleanup on viewer destruction
+     */
+    destroy() {
+        this.disconnect();
+        this.connectionManager.destroy();
+        if (this.frameTimeoutHandle) {
+            clearTimeout(this.frameTimeoutHandle);
+        }
     }
 }
 

@@ -26,13 +26,13 @@ const http = require('http');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Simple logger wrapper - only logs in development
+// Simple logger wrapper - logs errors/warnings always, info only in dev
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const logger = {
-    info: (...args) => !IS_PRODUCTION && console.log(...args),
-    warn: (...args) => console.warn(...args),
-    error: (...args) => console.error(...args),
-    debug: (...args) => !IS_PRODUCTION && console.log(...args)
+    info: (...args) => console.log('[INFO]', ...args), // Always log info (startup messages important)
+    warn: (...args) => console.warn('[WARN]', ...args),
+    error: (...args) => console.error('[ERROR]', ...args),
+    debug: (...args) => !IS_PRODUCTION && console.log('[DEBUG]', ...args) // Debug only in dev
 };
 
 // Configuration
@@ -69,6 +69,25 @@ const clientMetadata = new WeakMap();
 const sessionStats = new Map();
 
 /**
+ * Generate unique ID
+ */
+function generateId() {
+    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+}
+
+/**
+ * Send error message to client
+ */
+function sendError(ws, message) {
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: 'error',
+            message: message
+        }));
+    }
+}
+
+/**
  * Initialize database connection
  */
 async function initDatabase() {
@@ -96,51 +115,6 @@ async function initDatabase() {
         process.exit(1);
     }
 }
-
-/**
- * Handle new WebSocket connection
- */
-wss.on('connection', (ws, req) => {
-    logger.debug('📱 New WebSocket connection from:', req.socket.remoteAddress);
-    
-    // Initialize client metadata
-    clientMetadata.set(ws, {
-        id: generateId(),
-        connectedAt: Date.now(),
-        ip: req.socket.remoteAddress,
-        authenticated: false
-    });
-    
-    // Set connection timeout for authentication
-    const authTimeout = setTimeout(() => {
-        if (!clientMetadata.get(ws).authenticated) {
-            logger.warn('⏱️ Authentication timeout, closing connection');
-            ws.close(4001, 'Authentication timeout');
-        }
-    }, 30000); // 30 seconds
-    
-    // Handle incoming messages
-    ws.on('message', async (data) => {
-        try {
-            const message = JSON.parse(data.toString());
-            await handleMessage(ws, message, authTimeout);
-        } catch (error) {
-            logger.error('❌ Error handling message:', error);
-            sendError(ws, 'Invalid message format');
-        }
-    });
-    
-    // Handle connection close
-    ws.on('close', () => {
-        clearTimeout(authTimeout);
-        handleDisconnect(ws);
-    });
-    
-    // Handle errors
-    ws.on('error', (error) => {
-        logger.error('❌ WebSocket error:', error);
-    });
-});
 
 /**
  * Handle incoming message from client
@@ -342,21 +316,45 @@ function handleFrame(ws, message) {
     const { deviceId } = metadata;
     const room = rooms.get(deviceId);
     
-    if (!room) return;
+    if (!room) {
+        logger.warn(`⚠️ Frame received but no room found for device: ${deviceId}`);
+        return;
+    }
     
     // Update statistics
     updateStats(deviceId, 'framesSent');
     
+    // Log frame broadcast (only in non-production or debug mode)
+    const viewerCount = room.viewers.length;
+    if (viewerCount === 0) {
+        logger.debug(`📹 Frame received but NO viewers connected for device: ${deviceId}`);
+    } else {
+        logger.debug(`📹 Broadcasting frame to ${viewerCount} viewer(s) for device: ${deviceId}`);
+    }
+    
     // Broadcast frame to all viewers in the room
+    let broadcastCount = 0;
     room.viewers.forEach(viewer => {
         if (viewer.readyState === WebSocket.OPEN) {
-            viewer.send(JSON.stringify(message));
+            try {
+                viewer.send(JSON.stringify(message));
+                broadcastCount++;
+            } catch (error) {
+                logger.error(`❌ Error sending frame to viewer:`, error);
+            }
+        } else {
+            logger.warn(`⚠️ Viewer connection not OPEN (state: ${viewer.readyState}), skipping frame`);
         }
     });
     
+    // Log if broadcast failed
+    if (broadcastCount === 0 && viewerCount > 0) {
+        logger.warn(`⚠️ Frame received but failed to send to any of ${viewerCount} viewer(s)`);
+    }
+    
     // Update last frame timestamp in database (throttled)
     throttledDbUpdate(deviceId);
-    // Frame relay logging disabled in production (high frequency)
+}
 
 /**
  * Handle input command from viewer
@@ -538,7 +536,6 @@ function updateStats(deviceId, metric) {
     const stats = sessionStats.get(deviceId);
     stats[metric] = (stats[metric] || 0) + 1;
 }
-
 /**
  * Throttled database update (max once per 5 seconds)
  */
@@ -554,25 +551,6 @@ function throttledDbUpdate(deviceId) {
             [deviceId]
         ).catch(err => logger.error('DB update error:', err));
     }
-}
-
-/**
- * Send error message to client
- */
-function sendError(ws, message) {
-    if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            message: message
-        }));
-    }
-}
-
-/**
- * Generate unique ID
- */
-function generateId() {
-    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 }
 
 // HTTP endpoints for monitoring
@@ -601,14 +579,65 @@ app.get('/stats', (req, res) => {
 
 // Initialize and start server
 async function start() {
+    console.log('🚀 Starting Remote Control Relay Server...');
+    console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
+    console.log('🔌 WebSocket Port:', WS_PORT);
+    console.log('🌐 HTTP Port:', HTTP_PORT);
+    
     await initDatabase();
     
     server.listen(HTTP_PORT, () => {
         logger.info(`🌐 HTTP server running on port ${HTTP_PORT}`);
+        console.log(`✅ HTTP server listening on http://0.0.0.0:${HTTP_PORT}`);
     });
     
     logger.info(`🔌 WebSocket server running on port ${WS_PORT}`);
     logger.info(`✅ Remote Control Relay Server started`);
+    console.log(`✅ WebSocket server listening on ws://0.0.0.0:${WS_PORT}`);
+    console.log(`✅ Relay Server READY - Waiting for connections...`);
+    
+    // Setup WebSocket connection handler AFTER all functions are defined
+    wss.on('connection', (ws, req) => {
+        logger.debug('📱 New WebSocket connection from:', req.socket.remoteAddress);
+        
+        // Initialize client metadata
+        clientMetadata.set(ws, {
+            id: generateId(),
+            connectedAt: Date.now(),
+            ip: req.socket.remoteAddress,
+            authenticated: false
+        });
+        
+        // Set connection timeout for authentication
+        const authTimeout = setTimeout(() => {
+            if (!clientMetadata.get(ws).authenticated) {
+                logger.warn('⏱️ Authentication timeout, closing connection');
+                ws.close(4001, 'Authentication timeout');
+            }
+        }, 30000); // 30 seconds
+        
+        // Handle incoming messages
+        ws.on('message', async (data) => {
+            try {
+                const message = JSON.parse(data.toString());
+                await handleMessage(ws, message, authTimeout);
+            } catch (error) {
+                logger.error('❌ Error handling message:', error);
+                sendError(ws, 'Invalid message format');
+            }
+        });
+        
+        // Handle connection close
+        ws.on('close', () => {
+            clearTimeout(authTimeout);
+            handleDisconnect(ws);
+        });
+        
+        // Handle errors
+        ws.on('error', (error) => {
+            logger.error('❌ WebSocket error:', error);
+        });
+    });
 }
 
 start().catch(error => {
@@ -632,4 +661,3 @@ process.on('SIGINT', async () => {
     
     process.exit(0);
 });
-}
