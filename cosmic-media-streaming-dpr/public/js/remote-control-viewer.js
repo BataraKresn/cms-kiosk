@@ -37,6 +37,7 @@ class RemoteControlViewer {
         this.lastFrameTime = Date.now();
         this.frameTimeoutDuration = 30000; // 30 seconds - show disconnected if no frame
         this.authSuccessTime = null;
+        this.hasReceivedFrame = false;
         
         // Statistics
         this.stats = {
@@ -44,7 +45,11 @@ class RemoteControlViewer {
             lastFrameTime: 0,
             fps: 0,
             latency: 0,
-            sessionStartTime: Date.now()
+            sessionStartTime: null, // Start when connected, not on init
+            sessionPaused: true,
+            resolution: { width: 0, height: 0 },
+            lastFpsCalcTime: 0,
+            fpsFrameCount: 0
         };
         
         // UI elements
@@ -62,6 +67,60 @@ class RemoteControlViewer {
         this.init();
     }
     
+    /**
+     * Debug logging (only in dev mode)
+     */
+    debug(category, message, data = null) {
+        if (this.config.debug !== false) {
+            const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+            const logMessage = `[${timestamp}] [${category}] ${message}`;
+            if (data) {
+                console.log(logMessage, data);
+            } else {
+                console.log(logMessage);
+            }
+        }
+    }
+
+    /**
+     * Show toast notification (replaces alert)
+     */
+    showToast(message, type = 'info', duration = 5000) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        const colors = {
+            error: 'bg-red-500',
+            warning: 'bg-orange-500',
+            success: 'bg-green-500',
+            info: 'bg-blue-500'
+        };
+        
+        toast.className = `${colors[type] || colors.info} text-white px-6 py-4 rounded-lg shadow-lg flex items-start gap-3 animate-slide-in`;
+        toast.innerHTML = `
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="flex-1">${message}</div>
+            <button class="text-white/80 hover:text-white" onclick="this.parentElement.remove()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(toast);
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+    }
+
     /**
      * Initialize viewer
      */
@@ -81,6 +140,7 @@ class RemoteControlViewer {
             reconnectAttempt: document.getElementById('reconnect-attempt'),
             statFps: document.getElementById('stat-fps'),
             statLatency: document.getElementById('stat-latency'),
+            statResolution: document.getElementById('stat-resolution'),
             statDuration: document.getElementById('stat-duration'),
             btnBack: document.getElementById('btn-back'),
             btnHome: document.getElementById('btn-home'),
@@ -216,6 +276,9 @@ class RemoteControlViewer {
      * Send authentication message
      */
     authenticate() {
+        // Reset session for new connection
+        this.resetSession();
+        
         const authMessage = {
             type: 'auth',
             role: 'viewer',
@@ -232,9 +295,17 @@ class RemoteControlViewer {
      * Connection state changed
      */
     onConnectionStateChange(state, error) {
+        this.debug('CONNECTION', `State changed to: ${state}`, { error });
         console.log(`📊 Connection state: ${state}`, error);
         this.updateUIForState(state, error);
         this.updateControlsState(state);
+        
+        // Handle session timer based on state
+        if (state === ConnectionStateManager.States.CONNECTED) {
+            this.startSession();
+        } else if (state === ConnectionStateManager.States.DISCONNECTED || state === ConnectionStateManager.States.ERROR) {
+            this.pauseSession();
+        }
     }
     
     /**
@@ -251,9 +322,39 @@ class RemoteControlViewer {
      */
     onMaxReconnectAttemptsReached() {
         console.error('❌ Maximum reconnection attempts reached');
-        alert('Unable to reconnect to device. Please check the device status and try again.');
+        this.showToast('Unable to reconnect to device. Please check the device status and try again.', 'error', 0);
     }
     
+    /**
+     * Start session timer
+     */
+    startSession() {
+        this.stats.sessionStartTime = Date.now();
+        this.stats.sessionPaused = false;
+        this.debug('SESSION', 'Session timer started');
+    }
+
+    /**
+     * Pause session timer
+     */
+    pauseSession() {
+        this.stats.sessionPaused = true;
+        this.debug('SESSION', 'Session timer paused');
+    }
+
+    /**
+     * Reset session timer
+     */
+    resetSession() {
+        this.stats.sessionStartTime = null;
+        this.stats.sessionPaused = true;
+        this.stats.fps = 0;
+        this.stats.latency = 0;
+        this.stats.resolution = { width: 0, height: 0 };
+        this.hasReceivedFrame = false;
+        this.debug('SESSION', 'Session timer reset');
+    }
+
     /**
      * Update UI based on connection state
      */
@@ -314,9 +415,12 @@ class RemoteControlViewer {
             }
         });
         
-        // Update canvas pointer style
+        // Update canvas pointer style and interaction
         this.canvas.style.cursor = isConnected ? 'crosshair' : 'not-allowed';
         this.canvas.style.opacity = isConnected ? '1' : '0.7';
+        this.canvas.style.pointerEvents = isConnected ? 'auto' : 'none';
+        
+        this.debug('UI', `Controls ${isConnected ? 'enabled' : 'disabled'}`);
     }
     
     /**
@@ -338,7 +442,10 @@ class RemoteControlViewer {
         switch (message.type) {
             case 'auth_success':
                 console.log('✅ Authentication successful');
-                this.connectionManager.handleConnected();
+                // Auth success means relay connection is ready, but device may still be offline.
+                // Stay in CONNECTING until we receive the first frame.
+                this.connectionManager.setState(ConnectionStateManager.States.CONNECTING);
+                this.hasReceivedFrame = false;
                 this.authSuccessTime = Date.now();
                 // Start frame timeout detection
                 this.startFrameTimeoutDetection();
@@ -375,10 +482,19 @@ class RemoteControlViewer {
                 
             case 'error':
                 console.error('❌ Server error:', message.message);
-                this.connectionManager.handleError(
-                    ConnectionStateManager.ErrorTypes.UNKNOWN,
-                    message.message || 'Server error'
-                );
+                if ((message.message || '').toLowerCase().includes('device not connected')) {
+                    this.connectionManager.handleError(
+                        ConnectionStateManager.ErrorTypes.DEVICE_OFFLINE,
+                        message.message || 'Device not connected'
+                    );
+                    // Force UI update to disabled state immediately
+                    this.updateControlsState(ConnectionStateManager.States.ERROR);
+                } else {
+                    this.connectionManager.handleError(
+                        ConnectionStateManager.ErrorTypes.UNKNOWN,
+                        message.message || 'Server error'
+                    );
+                }
                 break;
                 
             default:
@@ -390,21 +506,48 @@ class RemoteControlViewer {
      * Handle video frame
      */
     handleFrame(message) {
+        if (!this.connectionManager.isConnected()) {
+            this.connectionManager.handleConnected();
+            this.hasReceivedFrame = true;
+        }
         // Update frame statistics
         this.stats.framesReceived++;
         const now = Date.now();
-        this.stats.latency = now - message.timestamp;
         
-        // Calculate FPS
-        if (this.stats.lastFrameTime > 0) {
-            const deltaTime = (now - this.stats.lastFrameTime) / 1000;
-            this.stats.fps = Math.round(1 / deltaTime);
+        // Calculate latency from server timestamp if available
+        if (message.timestamp) {
+            this.stats.latency = now - message.timestamp;
         }
+        
+        // Calculate FPS using frame counting over 1-second windows
+        if (this.stats.lastFpsCalcTime === 0) {
+            this.stats.lastFpsCalcTime = now;
+            this.stats.fpsFrameCount = 1;
+        } else {
+            this.stats.fpsFrameCount++;
+            const fpsElapsed = (now - this.stats.lastFpsCalcTime) / 1000;
+            
+            if (fpsElapsed >= 1.0) {
+                this.stats.fps = Math.round(this.stats.fpsFrameCount / fpsElapsed);
+                this.stats.lastFpsCalcTime = now;
+                this.stats.fpsFrameCount = 0;
+                this.debug('METRICS', `FPS: ${this.stats.fps}, Latency: ${this.stats.latency}ms`);
+            }
+        }
+        
         this.stats.lastFrameTime = now;
         
         // Decode and display frame
         const img = new Image();
         img.onload = () => {
+            // Update resolution from actual image dimensions
+            if (img.width > 0 && img.height > 0) {
+                if (this.stats.resolution.width !== img.width || this.stats.resolution.height !== img.height) {
+                    this.stats.resolution = { width: img.width, height: img.height };
+                    this.debug('METRICS', `Resolution updated: ${img.width}x${img.height}`);
+                }
+            }
+            
             this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
         };
         img.src = 'data:image/jpeg;base64,' + message.data;
@@ -589,10 +732,13 @@ class RemoteControlViewer {
      * Send touch event to device
      */
     sendTouch(x, y) {
-        if (!this.config.canControl || !this.connectionManager.canSendCommands()) {
-            if (!this.config.canControl) {
-                alert('You do not have permission to control this device');
-            }
+        if (!this.connectionManager.canSendCommands()) {
+            this.showToast('Device not connected. Please wait for connection.', 'warning', 3000);
+            return;
+        }
+        
+        if (!this.config.canControl) {
+            this.showToast('You do not have permission to control this device', 'error', 3000);
             return;
         }
         
@@ -708,7 +854,7 @@ class RemoteControlViewer {
     toggleRecording() {
         // TODO: Implement recording functionality
         console.log('🎥 Recording not yet implemented');
-        alert('Recording feature coming soon!');
+        this.showToast('Recording feature coming soon!', 'info', 3000);
     }
     
     /**
@@ -734,19 +880,39 @@ class RemoteControlViewer {
      * Update statistics display
      */
     updateStats() {
-        // FPS
-        this.elements.statFps.textContent = this.stats.fps;
+        // FPS - show "—" if not connected or 0
+        if (this.elements.statFps) {
+            this.elements.statFps.textContent = this.stats.fps > 0 ? this.stats.fps : '—';
+        }
         
-        // Latency
-        this.elements.statLatency.textContent = this.stats.latency + ' ms';
+        // Latency - show "—" if not available
+        if (this.elements.statLatency) {
+            this.elements.statLatency.textContent = this.stats.latency > 0 ? `${this.stats.latency} ms` : '—';
+        }
         
-        // Session duration
-        const duration = Math.floor((Date.now() - this.stats.sessionStartTime) / 1000);
-        const hours = Math.floor(duration / 3600);
-        const minutes = Math.floor((duration % 3600) / 60);
-        const seconds = duration % 60;
-        this.elements.statDuration.textContent = 
-            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        // Resolution - show actual resolution or "—"
+        if (this.elements.statResolution) {
+            if (this.stats.resolution.width > 0 && this.stats.resolution.height > 0) {
+                this.elements.statResolution.textContent = `${this.stats.resolution.width}x${this.stats.resolution.height}`;
+            } else {
+                this.elements.statResolution.textContent = '—';
+            }
+        }
+        
+        // Session duration - only count when not paused
+        if (this.elements.statDuration) {
+            if (this.stats.sessionStartTime && !this.stats.sessionPaused) {
+                const duration = Math.floor((Date.now() - this.stats.sessionStartTime) / 1000);
+                const hours = Math.floor(duration / 3600);
+                const minutes = Math.floor((duration % 3600) / 60);
+                const seconds = duration % 60;
+                this.elements.statDuration.textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                // Show 00:00:00 when paused/not started
+                this.elements.statDuration.textContent = '00:00:00';
+            }
+        }
     }
     
     /**

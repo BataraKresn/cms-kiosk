@@ -148,6 +148,9 @@
             </div>
         </div>
         
+        {{-- Toast Notification Container --}}
+        <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2" style="max-width: 400px;"></div>
+
         {{-- Keyboard Modal (Hidden by default) --}}
         <div id="keyboard-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96">
@@ -278,6 +281,23 @@
             border: 2px solid rgba(148, 163, 184, 0.35);
             box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
             background: #0f172a;
+        }
+
+        /* Toast notification animation */
+        @keyframes slide-in {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-in {
+            animation: slide-in 0.3s ease-out;
+            transition: opacity 0.3s, transform 0.3s;
         }
 
         @media (max-width: 1024px) {
