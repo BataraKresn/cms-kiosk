@@ -12,6 +12,7 @@ services:
     container_name: platform-db-prod
     restart: always
     environment:
+      TZ: Asia/Jakarta
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${DB_DATABASE:-platform}
       MARIADB_USER: ${DB_USERNAME}
@@ -45,6 +46,8 @@ services:
     image: redis:7-alpine
     container_name: platform-redis-prod
     restart: always
+    environment:
+      TZ: Asia/Jakarta
     ports:
       - "6379:6379"
     volumes:
@@ -76,6 +79,7 @@ services:
     container_name: platform-minio-prod
     restart: always
     environment:
+      TZ: Asia/Jakarta
       MINIO_ROOT_USER: ${MINIO_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET}
     volumes:
@@ -506,8 +510,9 @@ services:
     env_file:
       - .env.prod
     environment:
-      - DB_USER=${DB_USERNAME}
-      - DB_NAME=${DB_DATABASE}
+      TZ: Asia/Jakarta
+      DB_USER: ${DB_USERNAME}
+      DB_NAME: ${DB_DATABASE}
     # Ports not exposed - accessed via Nginx reverse proxy
     volumes:
       - ./generate-pdf/uploads:/usr/src/app/uploads
@@ -616,15 +621,16 @@ services:
     container_name: remote-relay-prod
     restart: always
     environment:
-      - NODE_ENV=production
-      - HTTP_PORT=3002
-      - WS_PORT=3003
-      - DB_HOST=mariadb
-      - DB_PORT=3306
-      - DB_USER=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_DATABASE}
-      - LOG_LEVEL=info
+      TZ: Asia/Jakarta
+      NODE_ENV: production
+      HTTP_PORT: "3002"
+      WS_PORT: "3003"
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_DATABASE}
+      LOG_LEVEL: info
     # Ports removed - use internal network only
     # External access via Nginx reverse proxy on port 80/443
     # Internal services can access via http://remote-relay:3002 and ws://remote-relay:3003

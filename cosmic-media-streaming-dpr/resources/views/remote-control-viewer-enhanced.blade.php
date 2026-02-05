@@ -526,9 +526,9 @@
         </div>
     </div>
 
-    {{-- Load JavaScript modules --}}
-    <script src="{{ asset('js/connection-state-manager.js') }}"></script>
-    <script src="{{ asset('js/remote-control-viewer.js') }}"></script>
+    {{-- Load JavaScript modules with cache busting --}}
+    <script src="{{ asset('js/connection-state-manager.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/remote-control-viewer.js') }}?v={{ time() }}"></script>
     
     <script>
         // Configuration from backend
