@@ -2,6 +2,10 @@
 kiosk-touchscreen-dpr-app/
 kiosk-touchscreen-app/
 kiosk-touchscreen-app
+old-repo/
+old-repo
+old-repo/cms-dpr
+old-repo/cms-dpr/
 
 # Remote Control Application (separate repository)
 # remote-control-poc/
