@@ -28,6 +28,13 @@ class Kernel extends ConsoleKernel
             ->name('device-status-monitor')
             ->withoutOverlapping()
             ->runInBackground();
+
+        // Clean up old session logs every 5 minutes (SAFE: never removes active devices)
+        $schedule->command('remote-control:cleanup-session-logs --force --inactive-minutes=15')
+            ->everyFiveMinutes()
+            ->name('remote-session-logs-cleanup')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
     /**
      * Register the commands for the application.

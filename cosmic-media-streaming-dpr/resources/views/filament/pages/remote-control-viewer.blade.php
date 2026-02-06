@@ -327,7 +327,8 @@
             canRecord: {{ $canRecord ? 'true' : 'false' }},
         };
     </script>
-    <script src="{{ asset('js/remote-control-viewer.js') }}" defer></script>
+    <script src="{{ asset('js/connection-state-manager.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/remote-control-viewer.js') }}?v={{ time() }}"></script>
     @endpush
     
 </x-filament-panels::page>

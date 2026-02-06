@@ -585,8 +585,8 @@ services:
     environment:
       - TZ=Asia/Jakarta
     ports:
-      - "8080:80"      # HTTP - Custom port
-      - "8443:443"     # HTTPS - Custom port
+      - "0.0.0.0:8080:80"      # HTTP - Listen on all interfaces
+      - "0.0.0.0:8443:443"     # HTTPS - Listen on all interfaces
     volumes:
       - ./cosmic-media-streaming-dpr/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./data-kiosk/nginx/ssl:/etc/nginx/ssl:ro

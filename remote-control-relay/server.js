@@ -28,11 +28,12 @@ require('dotenv').config();
 
 // Simple logger wrapper - logs errors/warnings always, info only in dev
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const ENABLE_DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.DEBUG === '1';
 const logger = {
     info: (...args) => console.log('[INFO]', ...args), // Always log info (startup messages important)
     warn: (...args) => console.warn('[WARN]', ...args),
     error: (...args) => console.error('[ERROR]', ...args),
-    debug: (...args) => !IS_PRODUCTION && console.log('[DEBUG]', ...args) // Debug only in dev
+    debug: (...args) => (ENABLE_DEBUG || !IS_PRODUCTION) && console.log('[DEBUG]', ...args) // Debug in dev or if explicitly enabled
 };
 
 // Configuration
@@ -135,6 +136,8 @@ async function handleMessage(ws, message, authTimeout) {
         return;
     }
     
+    logger.debug(`📨 Message received: type=${type}, role=${metadata.role}, deviceId=${metadata.deviceId}`);
+    
     // Route message based on type
     switch (type) {
         case 'frame':
@@ -142,6 +145,7 @@ async function handleMessage(ws, message, authTimeout) {
             break;
             
         case 'input_command':
+            logger.debug(`📨 Input command received: ${JSON.stringify(message).substring(0, 100)}`);
             handleInputCommand(ws, message);
             break;
             
@@ -150,7 +154,7 @@ async function handleMessage(ws, message, authTimeout) {
             break;
             
         case 'ping':
-            ws.send('pong');
+            ws.send(JSON.stringify({ type: 'pong' }));
             break;
         
         case 'device_status':
@@ -185,13 +189,35 @@ async function handleAuthentication(ws, message, authTimeout) {
         
         if (role === 'device') {
             // Authenticate Android device
+            logger.info(`🔍 Device auth query: token=${token.substring(0, 20)}...`);
+            logger.info(`📝 Token length: ${token.length}`);
             [dbRecord] = await dbPool.query(
-                'SELECT id, name, remote_control_enabled FROM remotes WHERE token = ? AND deleted_at IS NULL',
+                'SELECT id, name, remote_control_enabled, token as db_token FROM remotes WHERE token = ? AND deleted_at IS NULL',
                 [token]
             );
             
+            logger.info(`📊 DB query result: found ${dbRecord.length} records`);
+            if (dbRecord.length > 0) {
+                logger.info(`✅ Device record found: id=${dbRecord[0].id}, name=${dbRecord[0].name}, enabled=${dbRecord[0].remote_control_enabled}`);
+                const tokenMatch = dbRecord[0].db_token === token;
+                logger.info(`🔐 Token match: ${tokenMatch} (DB length: ${dbRecord[0].db_token.length}, Received length: ${token.length})`);
+            } else {
+                logger.warn(`⚠️ No device record found for token=${token.substring(0, 20)}...`);
+                // Try to see if token exists at all
+                const [checkToken] = await dbPool.query(
+                    'SELECT id, token FROM remotes WHERE token LIKE ?',
+                    [`${token.substring(0, 30)}%`]
+                );
+                if (checkToken.length > 0) {
+                    logger.warn(`💡 Found similar token in DB: id=${checkToken[0].id}, token=${checkToken[0].token.substring(0, 30)}...`);
+                }
+            }
+            
             if (dbRecord.length > 0 && dbRecord[0].remote_control_enabled) {
                 isValid = true;
+                logger.info(`✅ Device authentication VALID`);
+            } else {
+                logger.warn(`❌ Device authentication FAILED: records=${dbRecord.length}, enabled=${dbRecord[0]?.remote_control_enabled}`);
             }
             
         } else if (role === 'viewer') {
@@ -274,7 +300,8 @@ async function handleAuthentication(ws, message, authTimeout) {
         }
         
     } catch (error) {
-        logger.error('❌ Authentication error:', error);
+        logger.error('❌ Authentication error:', error.message);
+        logger.error('   Stack:', error.stack);
         sendError(ws, 'Authentication error');
         ws.close();
     }
@@ -284,27 +311,34 @@ async function handleAuthentication(ws, message, authTimeout) {
  * Add client to room
  */
 function addToRoom(ws, role, deviceId) {
+    const existingRoom = rooms.get(deviceId);
+    
     if (!rooms.has(deviceId)) {
         rooms.set(deviceId, {
             device: null,
             viewers: []
         });
+        logger.debug(`📍 New room created: ${deviceId}`);
+    } else {
+        logger.debug(`📍 Using existing room: ${deviceId} (device=${!!existingRoom.device}, viewers=${existingRoom.viewers.length})`);
     }
     
     const room = rooms.get(deviceId);
     
     if (role === 'device') {
         // Only one device per room
-        if (room.device) {
-            logger.warn('⚠️ Device already connected, closing old connection');
+        if (room.device && room.device !== ws) {
+            logger.warn(`⚠️ Device already connected to room ${deviceId}, closing old connection`);
             room.device.close();
         }
         room.device = ws;
-        logger.info(`📱 Device added to room: ${deviceId}`);
+        const wsId = clientMetadata.get(ws)?.id;
+        logger.info(`📱 Device added to room: ${deviceId} (ws_id=${wsId}, now ${room.viewers.length} viewer(s) in room)`);
         
     } else if (role === 'viewer') {
         room.viewers.push(ws);
-        logger.info(`👁️ Viewer added to room: ${deviceId} (total: ${room.viewers.length})`);
+        const wsId = clientMetadata.get(ws)?.id;
+        logger.info(`👁️ Viewer added to room: ${deviceId} (ws_id=${wsId}, total: ${room.viewers.length}, device_connected=${!!room.device})`);
     }
 }
 
@@ -370,7 +404,13 @@ function handleInputCommand(ws, message) {
     }
     
     const room = rooms.get(deviceId);
+    logger.debug(`🔍 Input handler: deviceId=${deviceId}, room exists=${!!room}, device exists=${room?.device ? 'yes' : 'no'}, viewers=${room?.viewers?.length || 0}`);
+    if (room?.device) {
+        logger.debug(`   room.device.readyState=${room.device.readyState}, ws from metadata same=${room.device === clientMetadata.get(ws)}`);
+    }
+    
     if (!room || !room.device) {
+        logger.warn(`⚠️ Device ${deviceId} not in room for input command. Rooms: ${Array.from(rooms.keys()).join(',')}`);
         sendError(ws, 'Device not connected');
         return;
     }
@@ -415,13 +455,20 @@ function handleControlCommand(ws, message) {
  */
 async function handleDisconnect(ws) {
     const metadata = clientMetadata.get(ws);
-    if (!metadata) return;
+    if (!metadata) {
+        logger.debug(`📉 Disconnect from unknown client (no metadata)`);
+        return;
+    }
     
-    const { role, deviceId, authenticated } = metadata;
+    const { role, deviceId, authenticated, id: wsId, connId } = metadata;
     
-    if (!authenticated) return;
+    if (!authenticated) {
+        logger.debug(`📉 ${connId || '?'}: Unauthenticated connection closed (ws_id=${wsId})`);
+        return;
+    }
     
-    logger.info(`🔌 Disconnect: ${role} from device ${deviceId}`);
+    logger.warn(`🔌 ${connId || '?'}: Disconnect: ${role} from device ${deviceId} (ws_id=${wsId})`);
+    
     
     const room = rooms.get(deviceId);
     if (!room) return;
@@ -463,10 +510,26 @@ async function handleDisconnect(ws) {
     }
     
     // Clean up empty rooms
-    if (!room.device && room.viewers.length === 0) {
-        rooms.delete(deviceId);
-        sessionStats.delete(deviceId);
-        logger.info(`🧹 Room cleaned up: ${deviceId}`);
+    // DISABLED: Keep rooms alive even after device/viewers disconnect
+    // This prevents the race condition where viewer reconnects to a deleted room
+    // Only delete if BOTH device is gone AND no viewers connected
+    // if (!room.device && room.viewers.length === 0) {
+    //     rooms.delete(deviceId);
+    //     sessionStats.delete(deviceId);
+    //     logger.info(`🧹 Room cleaned up: ${deviceId}`);
+    // }
+    
+    // If device disconnects but viewers still connected, notify them
+    if (!room.device && room.viewers.length > 0) {
+        logger.warn(`⚠️ Device ${deviceId} disconnected but ${room.viewers.length} viewer(s) still in room`);
+        room.viewers.forEach(viewer => {
+            if (viewer.readyState === WebSocket.OPEN) {
+                viewer.send(JSON.stringify({
+                    type: 'device_disconnected',
+                    message: 'Device has disconnected'
+                }));
+            }
+        });
     }
 }
 
@@ -598,20 +661,22 @@ async function start() {
     
     // Setup WebSocket connection handler AFTER all functions are defined
     wss.on('connection', (ws, req) => {
-        logger.debug('📱 New WebSocket connection from:', req.socket.remoteAddress);
+        const connId = Math.random().toString(36).substring(7);
+        logger.info(`📡 NEW CONNECTION: ${connId} from ${req.socket.remoteAddress}`);
         
         // Initialize client metadata
         clientMetadata.set(ws, {
             id: generateId(),
             connectedAt: Date.now(),
             ip: req.socket.remoteAddress,
-            authenticated: false
+            authenticated: false,
+            connId: connId
         });
         
         // Set connection timeout for authentication
         const authTimeout = setTimeout(() => {
             if (!clientMetadata.get(ws).authenticated) {
-                logger.warn('⏱️ Authentication timeout, closing connection');
+                logger.warn(`⏱️ ${connId}: Authentication timeout, closing connection`);
                 ws.close(4001, 'Authentication timeout');
             }
         }, 30000); // 30 seconds
@@ -619,23 +684,48 @@ async function start() {
         // Handle incoming messages
         ws.on('message', async (data) => {
             try {
-                const message = JSON.parse(data.toString());
+                const dataStr = data.toString();
+                const metadata = clientMetadata.get(ws);
+                logger.debug(`📨 ${metadata?.connId || '?'}: RAW message from ${metadata?.role || 'unauthenticated'}: ${dataStr.substring(0, 80)}`);
+                
+                // Handle plain text heartbeat from APK (backward compatibility)
+                if (dataStr === 'ping') {
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                    logger.debug(`💓 ${metadata?.connId || '?'}: Heartbeat pong sent`);
+                    return;
+                }
+                
+                // Ignore non-JSON messages to avoid sending type:error
+                const trimmed = dataStr.trim();
+                if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+                    logger.debug('ℹ️ Ignoring non-JSON message');
+                    return;
+                }
+                
+                const message = JSON.parse(trimmed);
                 await handleMessage(ws, message, authTimeout);
             } catch (error) {
-                logger.error('❌ Error handling message:', error);
-                sendError(ws, 'Invalid message format');
+                const metadata = clientMetadata.get(ws);
+                logger.error(`❌ Error handling message from ${metadata?.role || 'unknown'}: ${error.message}`);
+                logger.error(`   Stack: ${error.stack}`);
+                // Do not send type:error to client; just ignore malformed payloads
             }
         });
         
         // Handle connection close
         ws.on('close', () => {
+            const metadata = clientMetadata.get(ws);
+            const connId = metadata?.connId || '?';
+            logger.warn(`📉 ${connId}: Connection closed (${metadata?.role || 'unknown'} / device ${metadata?.deviceId || '?'})`);
             clearTimeout(authTimeout);
             handleDisconnect(ws);
         });
         
         // Handle errors
         ws.on('error', (error) => {
-            logger.error('❌ WebSocket error:', error);
+            const metadata = clientMetadata.get(ws);
+            const connId = metadata?.connId || '?';
+            logger.error(`❌ ${connId}: WebSocket error from ${metadata?.role || 'unknown'}: ${error.message}`);
         });
     });
 }
